@@ -1,0 +1,47 @@
+.order-list {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 10px;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  .order-item {
+    display: flex;
+    align-items: center;
+    background-color: #fdfbff;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    color: #333;
+    border: 1px solid #ddd;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05);
+    gap: 10px;
+  }
+  
+  .order-item-img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    border-radius: 8px;
+    background-color: #eee;
+  }
+  
+  .order-item-text {
+    flex: 1;
+  }
+  .remove-order-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    margin-left: auto;
+    color: #888;
+    transition: color 0.2s ease;
+  }
+  
+  .remove-order-btn:hover {
+    color: #e53935;
+  }
+  
+  
