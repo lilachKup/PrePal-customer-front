@@ -3,13 +3,13 @@ import OrderChat from "./OrderChat";
 import CurrentOrder from "./CurrentOrder";
 import './CustomerScreen.css';
 
-export default function CustomerScreen({ userId }) {
+export default function CustomerScreen({ customerId, customerName, customerMail, customerLocation }) {
     const [orderItems, setOrderItems] = useState([]);
     const [orderSent, setOrderSent] = useState(false);
 
     useEffect(() => {
-        console.log("Customer user ID:", userId);
-      }, [userId]);
+        console.log("Customer user ID:", customerId);
+    }, [customerId]);
 
     const handleNewItems = (itemsList) => {
         if (!Array.isArray(itemsList)) return;
@@ -20,15 +20,15 @@ export default function CustomerScreen({ userId }) {
             return {
                 name: item.Name,
                 image: item.Image || "https://img.icons8.com/ios-filled/50/cccccc/shopping-cart.png",
-                quantity: item.Quantity ,
-                price: (parseFloat(item.Price) * parseInt(item.Quantity)) ,
+                quantity: item.Quantity,
+                price: (parseFloat(item.Price) * parseInt(item.Quantity)),
             };
         });
         setOrderItems(newItems);
-       
-      };
-      
-    const sendOrder = () => {
+
+    };
+
+    /*const sendOrder = () => {
         fetch("http://localhost:5001/sendOrder", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -40,7 +40,31 @@ export default function CustomerScreen({ userId }) {
                 setOrderSent(true);
             })
             .catch((err) => console.error(err));
+    };*/
+
+    const sendOrder = () => {
+        const orderData = {
+            storeId: "24682478-3021-70bf-41e1-a3ee28bb3db7", //
+            customerName: customerName, 
+            customerMail: customerMail,
+            customerLocation: customerLocation,
+            totalPrice: orderItems.reduce((sum, item) => sum + item.price, 0),
+            items: orderItems.map(item => `${item.name}: ${item.quantity}`)
+        };
+
+        fetch("https://yv6baxe2i0.execute-api.us-east-1.amazonaws.com/dev/addOrderToStore", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(orderData)
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                console.log("Order response:", data);
+                setOrderSent(true);
+            })
+            .catch((err) => console.error(err));
     };
+
 
     return (
         <div className="customer-layout">
@@ -52,7 +76,7 @@ export default function CustomerScreen({ userId }) {
 
             {/* Order Area */}
             <div className="order-panel">
-                <h2 className="section-title">🧾 Current Order</h2>
+                <h2 className="section-title">🧾 {customerName}'s Order</h2>
                 <CurrentOrder items={orderItems} />
                 <button
                     onClick={sendOrder}
