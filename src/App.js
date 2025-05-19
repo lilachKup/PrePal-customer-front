@@ -21,11 +21,10 @@ function App() {
           element={
             auth.user?.profile ? (
                 <CustomerScreen
-                    customerId={auth.user.profile.sub}
+                    customer_id={auth.user.profile.sub}
                     customerName={auth.user.profile.name}
                     customerMail={auth.user.profile.email}
-                    //customerLocation={auth.user.profile['custom:location']}
-                    customerLocation={"Tel Aviv"} // Placeholder for location"}
+                    customerLocation={auth.user.profile.address} 
                 />
             ) : (
                 <div>Loading...</div>

@@ -1,15 +1,38 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import OrderChat from "./OrderChat";
 import CurrentOrder from "./CurrentOrder";
 import './CustomerScreen.css';
 
-export default function CustomerScreen({ customerId, customerName, customerMail, customerLocation }) {
+export default function CustomerScreen({ customer_id, customerName, customerMail, customerLocation }) {
     const [orderItems, setOrderItems] = useState([]);
     const [orderSent, setOrderSent] = useState(false);
+    const chatCreated = useRef(false);
+    const [chatId, setChatId] = useState(null);
 
-    useEffect(() => {
-        console.log("Customer user ID:", customerId);
-    }, [customerId]);
+
+    /*useEffect(() => {
+        if (!customerId || chatCreated.current) return;
+
+        const createChat = async () => {
+            try {
+                const response = await fetch(`https://zukr2k1std.execute-api.us-east-1.amazonaws.com/dev/client/createchat?client_id=${customerId}`, {
+                    method: "POST",
+                });
+
+                if (!response.ok) throw new Error("❌ Failed to create chat");
+
+                const data = await response.json();
+                console.log("🆕 Chat created successfully:", data.chat_id);
+
+                setChatId(data.chat_id); // 👈 כאן את שומרת אותו ב־state
+                chatCreated.current = true;
+            } catch (error) {
+                console.error("🚨 Error creating chat:", error);
+            }
+        };
+
+        createChat();
+    }, [customerId]);*/
 
     const handleNewItems = (itemsList) => {
         if (!Array.isArray(itemsList)) return;
@@ -45,7 +68,7 @@ export default function CustomerScreen({ customerId, customerName, customerMail,
     const sendOrder = () => {
         const orderData = {
             storeId: "24682478-3021-70bf-41e1-a3ee28bb3db7", //
-            customerName: customerName, 
+            customerName: customerName,
             customerMail: customerMail,
             customerLocation: customerLocation,
             totalPrice: orderItems.reduce((sum, item) => sum + item.price, 0),
@@ -71,7 +94,7 @@ export default function CustomerScreen({ customerId, customerName, customerMail,
             {/* Chat Area */}
             <div className="chat-panel">
                 <h2 className="section-title">🛒 Chat with PrepPal</h2>
-                <OrderChat onNewItem={handleNewItems} />
+                <OrderChat onNewItem={handleNewItems} customer_id={customer_id} />
             </div>
 
             {/* Order Area */}

@@ -1,13 +1,21 @@
 import React, { useState, useRef, useEffect } from "react";
 import './OrderChat.css';
 
-const OrderChat = ({ onNewItem }) => {
+const OrderChat = ({ onNewItem, customer_id }) => {
   const [message, setMessage] = useState("");
   const [chatLog, setChatLog] = useState([]);
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [chatId, setChatId] = useState("");
   const [isNewChat, setIsNewChat] = useState(true);
   const chatBoxRef = useRef(null);
+
+  useEffect(() => {
+    console.log("👤 customer_id prop:", customer_id);
+
+    if (!customer_id) {
+      console.warn("⚠️ Missing customer_id! Make sure it's passed correctly from CustomerScreen.");
+    }
+  }, [customer_id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -35,7 +43,7 @@ const OrderChat = ({ onNewItem }) => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            client_id: "1",
+            client_id: customer_id,
             create_chat: true
           })
         });
@@ -52,7 +60,7 @@ const OrderChat = ({ onNewItem }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: currentChatId,
-          client_id: "1",
+          client_id: customer_id,
           message: userMessage.content,
           create_chat: false
         })
@@ -72,7 +80,7 @@ const OrderChat = ({ onNewItem }) => {
       } else {
         setChatLog(prev => [
           ...prev.slice(0, -1),
-          { role: "bot", content: "🤖 I'm here, but didn't get a response. Try again!" }
+          { role: "bot", content: "I'm here, but didn't get a response. Try again!" }
         ]);
       }
 

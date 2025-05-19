@@ -26,13 +26,14 @@ export default function RegisterForm() {
   //const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [street, setStreet] = useState('');
+  const [houseNumber, setHouseNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [showLoginButton, setShowLoginButton] = useState(false);
- 
+
 
   const handleRegister = () => {
 
-    if (!email || !password || !phoneNumber || !city || !street || !customerName) {
+    if (!email || !password || !phoneNumber || !city || !street || !houseNumber || !customerName) {
       setMessage("❌ All fields must be filled");
       return;
     }
@@ -44,8 +45,9 @@ export default function RegisterForm() {
 
     const attributes = [
       new CognitoUserAttribute({ Name: 'email', Value: email }),
-      new CognitoUserAttribute({ Name: 'phone_number', Value: `+972${phoneNumber}`}),
-      new CognitoUserAttribute({ Name: 'name', Value: customerName })
+      new CognitoUserAttribute({ Name: 'phone_number', Value: `+972${phoneNumber}` }),
+      new CognitoUserAttribute({ Name: 'name', Value: customerName }),
+      new CognitoUserAttribute({ Name: 'address', Value: `${city}, ${street}, ${houseNumber}` }),
     ];
 
     userPool.signUp(email, password, attributes, null, async (err, result) => {
@@ -65,7 +67,7 @@ export default function RegisterForm() {
           /*await createMarketInDB({
             store_id: result.userSub,
             name: storeName,
-            address: `${city}, ${street}`,
+            address: `${city}, ${street}, ${houseNumber}`,
             email,
           });*/
 
@@ -167,6 +169,8 @@ export default function RegisterForm() {
       <label>Street:</label>
       <input type="text" value={street} onChange={(e) => setStreet(e.target.value)} className="form-input" />
 
+      <label>House Number:</label>
+      <input type="text" value={houseNumber} onChange={(e) => setHouseNumber(e.target.value)} className="form-input" />
 
       <label>Customer name:</label>
       <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="form-input" />
