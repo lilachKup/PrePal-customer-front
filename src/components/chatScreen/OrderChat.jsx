@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import './OrderChat.css';
 
-const OrderChat = ({ onNewItem, customer_id }) => {
+const OrderChat = ({ onNewItem, customer_id, customer_address }) => {
   const [message, setMessage] = useState("");
   const [chatLog, setChatLog] = useState([]);
   const [isBotTyping, setIsBotTyping] = useState(false);
@@ -39,14 +39,41 @@ const OrderChat = ({ onNewItem, customer_id }) => {
       let currentChatId = chatId;
 
       if (isNewChat) {
-        const initRes = await fetch("https://zukr2k1std.execute-api.us-east-1.amazonaws.com/dev/client/chat", {
+        /*const initRes = await fetch("https://zukr2k1std.execute-api.us-east-1.amazonaws.com/dev/client/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             client_id: customer_id,
             create_chat: true
           })
-        });
+        });*/
+
+        console.log("📡 Starting new chat for customer:", customer_id, "at address:", customer_address);
+
+        /*const initRes = await fetch(`https://zukr2k1std.execute-api.us-east-1.amazonaws.com/dev/client/createchat?client_id=${customer_id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            address: customer_address
+          })
+        });*/
+
+        const initRes = await fetch(
+        `https://zukr2k1std.execute-api.us-east-1.amazonaws.com/dev/client/createchat?client_id=${customer_id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ address: customer_address }),
+        }
+      );
+
+
+        
+
+        console.log("📡 Response status:", initRes.status, initRes.statusText);
+        console.log("checking");
 
         const initData = await initRes.json();
         currentChatId = initData.chat_id;

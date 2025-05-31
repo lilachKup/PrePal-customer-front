@@ -24,7 +24,7 @@ function App() {
                     customer_id={auth.user.profile.sub}
                     customerName={auth.user.profile.name}
                     customerMail={auth.user.profile.email}
-                    customerLocation={auth.user.profile.address} 
+                    customer_address={auth.user.profile.address} 
                 />
             ) : (
                 <div>Loading...</div>

@@ -3,7 +3,7 @@ import OrderChat from "./OrderChat";
 import CurrentOrder from "./CurrentOrder";
 import './CustomerScreen.css';
 
-export default function CustomerScreen({ customer_id, customerName, customerMail, customerLocation }) {
+export default function CustomerScreen({ customer_id, customerName, customerMail, customer_address }) {
     const [orderItems, setOrderItems] = useState([]);
     const [orderSent, setOrderSent] = useState(false);
     const chatCreated = useRef(false);
@@ -70,7 +70,7 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
             storeId: "24682478-3021-70bf-41e1-a3ee28bb3db7", //
             customerName: customerName,
             customerMail: customerMail,
-            customerLocation: customerLocation,
+            customerLocation: customer_address,
             totalPrice: orderItems.reduce((sum, item) => sum + item.price, 0),
             items: orderItems.map(item => `${item.name}: ${item.quantity}`)
         };
@@ -90,11 +90,12 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
 
 
     return (
+        console.log("address from customer screen", customer_address),
         <div className="customer-layout">
             {/* Chat Area */}
             <div className="chat-panel">
                 <h2 className="section-title">🛒 Chat with PrepPal</h2>
-                <OrderChat onNewItem={handleNewItems} customer_id={customer_id} />
+                <OrderChat onNewItem={handleNewItems} customer_id={customer_id} customer_address={customer_address} />
             </div>
 
             {/* Order Area */}
