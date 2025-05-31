@@ -8,6 +8,8 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
     const [orderSent, setOrderSent] = useState(false);
     const chatCreated = useRef(false);
     const [chatId, setChatId] = useState(null);
+    const [storeId, setStoreId] = useState(null);
+
 
 
     /*useEffect(() => {
@@ -34,7 +36,7 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
         createChat();
     }, [customerId]);*/
 
-    const handleNewItems = (itemsList) => {
+    const handleNewItems = (itemsList, store_id) => {
         if (!Array.isArray(itemsList)) return;
         //setOrderItems([]);
 
@@ -48,6 +50,8 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
             };
         });
         setOrderItems(newItems);
+
+        setStoreId(store_id);
 
     };
 
@@ -67,13 +71,15 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
 
     const sendOrder = () => {
         const orderData = {
-            storeId: "24682478-3021-70bf-41e1-a3ee28bb3db7", //
+            storeId: storeId,
             customerName: customerName,
             customerMail: customerMail,
             customerLocation: customer_address,
             totalPrice: orderItems.reduce((sum, item) => sum + item.price, 0),
             items: orderItems.map(item => `${item.name}: ${item.quantity}`)
         };
+
+        console.log("Sending order data:", orderData);
 
         fetch("https://yv6baxe2i0.execute-api.us-east-1.amazonaws.com/dev/addOrderToStore", {
             method: "POST",

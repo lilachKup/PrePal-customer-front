@@ -124,7 +124,7 @@ const OrderChat = ({ onNewItem, customer_id, customer_address }) => {
 
       if (Array.isArray(products)) {
         console.log("📤 calling onNewItem with:", products);
-        onNewItem(products);
+        onNewItem(products, data.store_id);
       } else {
         console.warn("⚠️ products is missing or not an array:", products);
       }
