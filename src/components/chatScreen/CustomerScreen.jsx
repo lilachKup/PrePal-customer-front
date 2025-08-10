@@ -3,12 +3,37 @@ import OrderChat from "./OrderChat";
 import CurrentOrder from "./CurrentOrder";
 import './CustomerScreen.css';
 
+async function getCoordinates(address) {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+
+    const res = await fetch(url); // בדפדפן אין אפשרות לשים User-Agent מותאם
+    if (!res.ok) throw new Error(`Geocode failed: ${res.status}`);
+    const data = await res.json();
+
+    if (!data.length) throw new Error("No results found");
+    return {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon)
+    };
+}
+
+
 export default function CustomerScreen({ customer_id, customerName, customerMail, customer_address }) {
     const [orderItems, setOrderItems] = useState([]);
     const [orderSent, setOrderSent] = useState(false);
     const chatCreated = useRef(false);
     const [chatId, setChatId] = useState(null);
     const [storeId, setStoreId] = useState(null);
+
+    const [coords, setCoords] = React.useState(null);
+
+    React.useEffect(() => {
+        if (customer_address) {
+            getCoordinates(customer_address)
+                .then(c => setCoords(c))
+                .catch(err => console.error("Geocoding error:", err));
+        }
+    }, [customer_address]);
 
 
 
@@ -69,12 +94,18 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
             .catch((err) => console.error(err));
     };*/
 
-    const sendOrder = () => {
+
+    const sendOrder = async () => {
+
+        const coords = await getCoordinates(customer_address);
+
         const orderData = {
             storeId: storeId,
             customerName: customerName,
             customerMail: customerMail,
             customerLocation: customer_address,
+            customerLat: coords.lat, // מוסיפים נ״צ
+            customerLng: coords.lng,
             totalPrice: orderItems.reduce((sum, item) => sum + item.price, 0),
             items: orderItems.map(item => `${item.name}: ${item.quantity}`)
         };
