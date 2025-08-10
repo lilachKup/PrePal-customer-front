@@ -4,13 +4,34 @@ import CurrentOrder from "./CurrentOrder";
 import './CustomerScreen.css';
 
 async function getCoordinates(address) {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+    // מנקים 0, 0 מהכתובת
 
-    const res = await fetch(url); // בדפדפן אין אפשרות לשים User-Agent מותאם
+    let cleaned = address.replace(/,?\s*0\s*,?\s*0\s*/g, "").trim();
+    if (!cleaned) throw new Error("Address is empty");
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleaned)}`;
+
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`Geocode failed: ${res.status}`);
     const data = await res.json();
 
-    if (!data.length) throw new Error("No results found");
+    if (!data.length) {
+        // fallback – ננסה לקחת רק את העיר (החלק הראשון לפני פסיק)
+        const cityOnly = address.split(",")[0].trim();
+        if (cityOnly) {
+            const cityUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityOnly)}`;
+            const cityRes = await fetch(cityUrl);
+            const cityData = await cityRes.json();
+            if (cityData.length) {
+                return {
+                    lat: parseFloat(cityData[0].lat),
+                    lng: parseFloat(cityData[0].lon)
+                };
+            }
+        }
+        throw new Error("No results found");
+    }
+
     return {
         lat: parseFloat(data[0].lat),
         lng: parseFloat(data[0].lon)
@@ -26,6 +47,7 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
     const [storeId, setStoreId] = useState(null);
 
     const [coords, setCoords] = React.useState(null);
+
 
     React.useEffect(() => {
         if (customer_address) {
