@@ -11,6 +11,7 @@ const OrderChat = ({ onNewItem, customer_id, customer_address }) => {
 
   useEffect(() => {
     console.log("👤 customer_id prop:", customer_id);
+    console.log("🏠 customer_address prop:", customer_address);
 
     if (!customer_id) {
       console.warn("⚠️ Missing customer_id! Make sure it's passed correctly from CustomerScreen.");
@@ -69,8 +70,6 @@ const OrderChat = ({ onNewItem, customer_id, customer_address }) => {
         }
       );
 
-
-        
 
         console.log("📡 Response status:", initRes.status, initRes.statusText);
         console.log("checking");

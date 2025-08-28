@@ -2,9 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import OrderChat from "./OrderChat";
 import CurrentOrder from "./CurrentOrder";
 import './CustomerScreen.css';
+import TopBar from "./TopBar";
+
+{/* import TopBar from "./TopBar";*/}
+
+
 
 async function getCoordinates(address) {
-    // מנקים 0, 0 מהכתובת
 
     let cleaned = address.replace(/,?\s*0\s*,?\s*0\s*/g, "").trim();
     if (!cleaned) throw new Error("Address is empty");
@@ -16,7 +20,6 @@ async function getCoordinates(address) {
     const data = await res.json();
 
     if (!data.length) {
-        // fallback – ננסה לקחת רק את העיר (החלק הראשון לפני פסיק)
         const cityOnly = address.split(",")[0].trim();
         if (cityOnly) {
             const cityUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityOnly)}`;
@@ -42,6 +45,7 @@ async function getCoordinates(address) {
 export default function CustomerScreen({ customer_id, customerName, customerMail, customer_address }) {
     const [orderItems, setOrderItems] = useState([]);
     const [orderSent, setOrderSent] = useState(false);
+    const [customerAddressOrder, setCustomerAddressOrder] = useState(null);
     const chatCreated = useRef(false);
     const [chatId, setChatId] = useState(null);
     const [storeId, setStoreId] = useState(null);
@@ -49,13 +53,32 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
     const [coords, setCoords] = React.useState(null);
 
 
-    React.useEffect(() => {
+    /*React.useEffect(() => {
         if (customer_address) {
             getCoordinates(customer_address)
                 .then(c => setCoords(c))
                 .catch(err => console.error("Geocoding error:", err));
         }
-    }, [customer_address]);
+    }, [customerAddress]);*/
+
+
+    useEffect(() => {
+        const flag = prompt("do you order to your location that you sigend up? yes/no");
+        if(flag.toLowerCase() == "yes")
+        {
+            const city = prompt("Please enter your city to order:");
+            const street = prompt("Please enter your full address to order (street):");
+            const number = prompt("Please enter your house number:");
+            const address = `${city}, ${street}, ${number}`;
+            setCustomerAddressOrder(address);
+        }
+        else
+        {
+            setCustomerAddressOrder(customer_address);
+        }
+    
+
+    }, []);
 
 
 
@@ -102,31 +125,19 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
 
     };
 
-    /*const sendOrder = () => {
-        fetch("http://localhost:5001/sendOrder", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ items: orderItems }),
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                console.log("Order response:", data);
-                setOrderSent(true);
-            })
-            .catch((err) => console.error(err));
-    };*/
 
 
     const sendOrder = async () => {
 
-        const coords = await getCoordinates(customer_address);
+        const coords = await getCoordinates(customerAddressOrder);
 
         const orderData = {
             storeId: storeId,
             customerName: customerName,
             customerMail: customerMail,
-            customerLocation: customer_address,
-            customerLat: coords.lat, // מוסיפים נ״צ
+            customerId: customer_id,
+            customerLocation: customerAddressOrder,
+            customerLat: coords.lat, 
             customerLng: coords.lng,
             totalPrice: orderItems.reduce((sum, item) => sum + item.price, 0),
             items: orderItems.map(item => `${item.name}: ${item.quantity}`)
@@ -149,26 +160,35 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
 
 
     return (
-        console.log("address from customer screen", customer_address),
-        <div className="customer-layout">
-            {/* Chat Area */}
-            <div className="chat-panel">
-                <h2 className="section-title">🛒 Chat with PrepPal</h2>
-                <OrderChat onNewItem={handleNewItems} customer_id={customer_id} customer_address={customer_address} />
+        <>
+            <TopBar
+                onLogin={() => console.log("Login clicked")}
+                onLogout={() => console.log("Logout clicked")}
+                onAddLocation={() => console.log("Add Location clicked")}
+            />
+
+
+            <div className="customer-layout">
+                {/* Chat Area */}
+                <div className="chat-panel">
+                    <h2 className="section-title">🛒 Chat with PrepPal</h2>
+                    <OrderChat onNewItem={handleNewItems} customer_id={customer_id} customer_address={customerAddressOrder} />
+                </div>
+
+                {/* Order Area */}
+                <div className="order-panel">
+                    <h2 className="section-title">🧾 {customerName}'s Order</h2>
+                    <CurrentOrder items={orderItems} />
+                    <button
+                        onClick={sendOrder}
+                        className="send-order-btn"
+                        disabled={orderItems.length === 0 || orderSent}
+                    >
+                        {orderSent ? "✅ Order Sent" : "📦 Send Order"}
+                    </button>
+                </div>
             </div>
 
-            {/* Order Area */}
-            <div className="order-panel">
-                <h2 className="section-title">🧾 {customerName}'s Order</h2>
-                <CurrentOrder items={orderItems} />
-                <button
-                    onClick={sendOrder}
-                    className="send-order-btn"
-                    disabled={orderItems.length === 0 || orderSent}
-                >
-                    {orderSent ? "✅ Order Sent" : "📦 Send Order"}
-                </button>
-            </div>
-        </div>
+        </>
     );
 }
