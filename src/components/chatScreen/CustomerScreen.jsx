@@ -79,20 +79,28 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
             }
 
 
-            const res = await fetch(
+            const olderOrdersRes = await fetch(
                 `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/getOldestsOrders/${customer_id}`, {
                 method: "GET", headers: {
                     "Content-Type": "application/json"
                 }
             });
-            const data = await res.json();
-            if (data.orders && data.orders.length > 0) {
-                const oldestOrders = data.orders.map(orderItems => ({
+            const dataOfOldestOrders = await olderOrdersRes.json();
+            if (dataOfOldestOrders.orders && dataOfOldestOrders.orders.length > 0) {
+                const oldestOrders = dataOfOldestOrders.orders.map(orderItems => ({
                     items: orderItems.items.map(item => {
                         const [name, quantity] = item.split(":").map(s => s.trim());
                         return { name, quantity: parseInt(quantity, 10) };
                     })
                 }));
+
+                const activeOrdersRes = await fetch(`https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/activeOrders/${customer_id}`, {
+                    method: "GET", headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+                const dataOfActiveOrders = await activeOrdersRes.json();
+
 
 
                 setOlderOrderItems(oldestOrders);
