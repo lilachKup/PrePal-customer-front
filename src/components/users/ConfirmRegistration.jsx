@@ -4,7 +4,7 @@ import {
   CognitoUser,
   CognitoUserPool
 } from "amazon-cognito-identity-js";
-import { useAuth } from 'react-oidc-context'; // 👈 הוספנו את זה
+import { useAuth } from 'react-oidc-context';
 
 const poolData = {
   UserPoolId: "us-east-1_TpeA6BAZD",

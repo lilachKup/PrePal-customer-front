@@ -49,6 +49,7 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
     const chatCreated = useRef(false);
     const [chatId, setChatId] = useState(null);
     const [storeId, setStoreId] = useState(null);
+    const [olderOrderItems, setOlderOrderItems] = useState([]);
 
     const [coords, setCoords] = React.useState(null);
 
@@ -63,21 +64,43 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
 
 
     useEffect(() => {
-        const flag = prompt("do you order to your location that you sigend up? yes/no");
-        if(flag.toLowerCase() == "yes")
-        {
-            const city = prompt("Please enter your city to order:");
-            const street = prompt("Please enter your full address to order (street):");
-            const number = prompt("Please enter your house number:");
-            const address = `${city}, ${street}, ${number}`;
-            setCustomerAddressOrder(address);
-        }
-        else
-        {
-            setCustomerAddressOrder(customer_address);
-        }
-    
+        (async () => {
+            let flag = prompt("do you order to your location that you sigend up? yes/no");
+            if (flag === "yes") {
+                const city = prompt("Please enter your city to order:");
+                const street = prompt("Please enter your full address to order (street):");
+                const number = prompt("Please enter your house number:");
+                const address = `${city}, ${street}, ${number}`;
+                setCustomerAddressOrder(address);
+            } else {
+                setCustomerAddressOrder(customer_address);
+            }
 
+
+            const res = await fetch(
+                `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/getOldestsOrders/${customer_id}`, {
+                    method: "GET", headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+            const data = await res.json();
+            if (data.orders && data.orders.length > 0)
+            {
+                const oldestOrders = data.orders.map(orderItems => ({
+                    items: orderItems.items.map(item => {
+                        const [name, quantity] = item.split(":").map(s => s.trim());
+                        return { name, quantity: parseInt(quantity, 10) };
+                    })
+                }));
+
+
+                setOlderOrderItems(oldestOrders);
+                console.log("oldestOrders:", olderOrderItems);
+
+            }
+
+
+        })();
     }, []);
 
 
@@ -137,7 +160,7 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
             customerMail: customerMail,
             customerId: customer_id,
             customerLocation: customerAddressOrder,
-            customerLat: coords.lat, 
+            customerLat: coords.lat,
             customerLng: coords.lng,
             totalPrice: orderItems.reduce((sum, item) => sum + item.price, 0),
             items: orderItems.map(item => `${item.name}: ${item.quantity}`)
