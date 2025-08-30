@@ -3,8 +3,10 @@ import OrderChat from "./OrderChat";
 import CurrentOrder from "./CurrentOrder";
 import './CustomerScreen.css';
 import TopBar from "./TopBar";
+import PreviousOrders from "./PreviousOrders";
+import ActiveOrders from "./ActiveOrders";
 
-{/* import TopBar from "./TopBar";*/}
+{/* import TopBar from "./TopBar";*/ }
 
 
 
@@ -79,13 +81,12 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
 
             const res = await fetch(
                 `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/getOldestsOrders/${customer_id}`, {
-                    method: "GET", headers: {
-                        "Content-Type": "application/json"
-                    }
-                });
+                method: "GET", headers: {
+                    "Content-Type": "application/json"
+                }
+            });
             const data = await res.json();
-            if (data.orders && data.orders.length > 0)
-            {
+            if (data.orders && data.orders.length > 0) {
                 const oldestOrders = data.orders.map(orderItems => ({
                     items: orderItems.items.map(item => {
                         const [name, quantity] = item.split(":").map(s => s.trim());
@@ -192,22 +193,29 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
 
 
             <div className="customer-layout">
+                <div className="old-orders">
+                    <PreviousOrders orders={olderOrderItems} />
+                    <ActiveOrders items={orderItems} onSend={sendOrder} orderSent={orderSent} />
+                </div>
+
                 {/* Chat Area */}
                 <div className="chat-panel">
-                    <h2 className="section-title">🛒 Chat with PrepPal</h2>
+                    <h2 className="section-title">Chat with PrepPal</h2>
                     <OrderChat onNewItem={handleNewItems} customer_id={customer_id} customer_address={customerAddressOrder} />
                 </div>
 
+
+
                 {/* Order Area */}
                 <div className="order-panel">
-                    <h2 className="section-title">🧾 {customerName}'s Order</h2>
+                    <h2 className="section-title">Current Order</h2>
                     <CurrentOrder items={orderItems} />
                     <button
                         onClick={sendOrder}
                         className="send-order-btn"
                         disabled={orderItems.length === 0 || orderSent}
                     >
-                        {orderSent ? "✅ Order Sent" : "📦 Send Order"}
+                        {orderSent ? "✅ Order Sent" : "Send Order"}
                     </button>
                 </div>
             </div>

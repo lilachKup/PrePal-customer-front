@@ -1,0 +1,24 @@
+.previous-orders {
+    flex: 2;
+    background-color: #fff;
+    /* אפשר להשאיר לבן בפנים */
+    border: 2px solid var(--pp-orange-panel);
+    border-radius: 10px;
+    padding: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+}
+
+.orders-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.orders-item {
+    background: #fafafa;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
