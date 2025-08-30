@@ -52,6 +52,7 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
     const [chatId, setChatId] = useState(null);
     const [storeId, setStoreId] = useState(null);
     const [olderOrderItems, setOlderOrderItems] = useState([]);
+    const [activeOrders, setActiveOrders] = useState([]);
 
     const [coords, setCoords] = React.useState(null);
 
@@ -67,49 +68,64 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
 
     useEffect(() => {
         (async () => {
-            let flag = prompt("do you order to your location that you sigend up? yes/no");
-            if (flag === "yes") {
-                const city = prompt("Please enter your city to order:");
-                const street = prompt("Please enter your full address to order (street):");
-                const number = prompt("Please enter your house number:");
-                const address = `${city}, ${street}, ${number}`;
-                setCustomerAddressOrder(address);
-            } else {
-                setCustomerAddressOrder(customer_address);
-            }
-
-
-            const olderOrdersRes = await fetch(
-                `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/getOldestsOrders/${customer_id}`, {
-                method: "GET", headers: {
-                    "Content-Type": "application/json"
+            try {
+                // כתובת למשלוח
+                let flag = prompt("do you order to your location that you sigend up? yes/no");
+                if (flag === "yes") {
+                    const city = prompt("Please enter your city to order:");
+                    const street = prompt("Please enter your full address to order (street):");
+                    const number = prompt("Please enter your house number:");
+                    setCustomerAddressOrder(`${city}, ${street}, ${number}`);
+                } else {
+                    setCustomerAddressOrder(customer_address);
                 }
-            });
-            const dataOfOldestOrders = await olderOrdersRes.json();
-            if (dataOfOldestOrders.orders && dataOfOldestOrders.orders.length > 0) {
-                const oldestOrders = dataOfOldestOrders.orders.map(orderItems => ({
-                    items: orderItems.items.map(item => {
-                        const [name, quantity] = item.split(":").map(s => s.trim());
-                        return { name, quantity: parseInt(quantity, 10) };
-                    })
+
+                // ===== 1) Orders: oldest =====
+                const oldestRes = await fetch(
+                    `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/getOldestsOrders/${customer_id}`,
+                    { method: "GET", headers: { "Content-Type": "application/json" } }
+                );
+                const oldestJson = await oldestRes.json();
+                console.log("oldestOrders raw:", oldestJson);
+
+                const oldestOrdersArr = Array.isArray(oldestJson?.orders) ? oldestJson.orders : [];
+                // פרסור גמיש: גם "שם: כמות" וגם אובייקט {name, quantity}
+                const parsedOldest = oldestOrdersArr.map((order) => ({
+                    items: (order.items || []).map((it) => {
+                        if (typeof it === "string") {
+                            const [name, quantity] = it.split(":").map((s) => s.trim());
+                            return { name, quantity: Number.parseInt(quantity || "1", 10) || 1 };
+                        }
+                        if (it && typeof it === "object") {
+                            return {
+                                name: String(it.name ?? it.product ?? "item"),
+                                quantity: Number(it.quantity ?? it.qty ?? 1),
+                            };
+                        }
+                        return { name: String(it), quantity: 1 };
+                    }),
                 }));
+                setOlderOrderItems(parsedOldest);
 
-                const activeOrdersRes = await fetch(`https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/activeOrders/${customer_id}`, {
-                    method: "GET", headers: {
-                        "Content-Type": "application/json"
-                    }
-                });
-                const dataOfActiveOrders = await activeOrdersRes.json();
+                // ===== 2) Orders: active (תמיד נביא, גם אם אין ישנים)
+                const activeRes = await fetch(
+                    `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/activeOrders/${customer_id}`,
+                    { method: "GET", headers: { "Content-Type": "application/json" } }
+                );
+                const activeJson = await activeRes.json();
+                console.log("activeOrders raw:", activeJson);
 
+                // שמור רק את המערך של ההזמנות (אם זה מה שה־UI מצפה לו)
+                setActiveOrders(Array.isArray(activeJson?.orders) ? activeJson.orders : []);
 
+                // אם תרצה לשמור גם count וכו' – שמור אובייקט אחר בסטייט נפרד.
+                // setActiveMeta({ count: activeJson.count, customer_id: activeJson.customer_id });
 
-                setOlderOrderItems(oldestOrders);
-                console.log("oldestOrders:", olderOrderItems);
-
+            } catch (e) {
+                console.error("load orders failed:", e);
             }
-
-
         })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
 
