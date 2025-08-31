@@ -209,6 +209,7 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
 
     return (
         <>
+            {console.log("Rendering CustomerScreen with:", { customer_id, customerName, customerMail, customer_address, customerAddressOrder })}
             <TopBar
                 onLogin={() => console.log("Login clicked")}
                 onLogout={() => console.log("Logout clicked")}
@@ -219,7 +220,7 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
             <div className="customer-layout">
                 <div className="old-orders">
                     <PreviousOrders orders={olderOrderItems} />
-                    <ActiveOrders items={orderItems} onSend={sendOrder} orderSent={orderSent} />
+                    <ActiveOrders orders={activeOrders} />
                 </div>
 
                 {/* Chat Area */}

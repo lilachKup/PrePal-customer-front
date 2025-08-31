@@ -5,34 +5,38 @@ import ConfirmRegistration from './components/users/ConfirmRegistration.jsx';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from 'react-oidc-context';
 import CallbackPage from './CallbackPage';
+import ForgotPassword from './components/users/ForgotPassword.jsx';
 
 
 function App() {
   const auth = useAuth();
   const location = useLocation();
+  const cached = (() => { try { return JSON.parse(localStorage.getItem('pp_user') || 'null'); } catch { return null; } })();
 
-    return (
+  return (
     <Routes>
       <Route path="/" element={<AuthTabs />} />
       <Route path="/confirm" element={<ConfirmRegistration />} />
+      <Route path="/forgot" element={<ForgotPassword />} />
       <Route path="/callback" element={<CallbackPage />} />
       <Route
-          path="/customerScreen"
-          element={
-            auth.user?.profile ? (
-                <CustomerScreen
-                    customer_id={auth.user.profile.sub}
-                    customerName={auth.user.profile.name}
-                    customerMail={auth.user.profile.email}
-                    customer_address={auth.user.profile.address} 
-                />
-            ) : (
-                <div>Loading...</div>
-            )
-          }
+        path="/customerScreen"
+        element={
+
+          (auth.user?.profile || cached) ? (
+            <CustomerScreen
+              customer_id={(auth.user?.profile?.sub) || cached?.sub}
+              customerName={(auth.user?.profile?.name) || cached?.name}
+              customerMail={(auth.user?.profile?.email) || cached?.email}
+              customer_address={(auth.user?.profile?.address) || cached?.address || ''}
+            />
+          ) : (
+            <Navigate to="/?tab=login" replace />
+          )
+        }
       />
 
-
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

@@ -154,3 +154,13 @@
     transform: scale(1);
   }
 }
+
+.chat-box {
+  scrollbar-width: thin;                          /* Firefox */
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+.chat-box::-webkit-scrollbar { width: 8px; }
+.chat-box::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 8px;
+}

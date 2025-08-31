@@ -33,7 +33,7 @@ export default function RegisterForm() {
 
   const handleRegister = () => {
 
-    if (!email || !password || !phoneNumber || !city || !street || !houseNumber || !customerName) {
+    if (!email || !password || !phoneNumber || !city || !customerName) {
       setMessage("❌ All fields must be filled");
       return;
     }
