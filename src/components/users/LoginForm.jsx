@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import { AuthenticationDetails, CognitoUser, CognitoUserPool } from 'amazon-cognito-identity-js';
 import './RegisterForm.css';
 
-const poolData = { UserPoolId: 'us-east-1_TpeA6BAZD', ClientId: '56ic185te584076fcsarbqq93m' };
+const poolData = {
+  UserPoolId: "us-east-1_TpeA6BAZD",
+  ClientId: "56ic185te584076fcsarbqq93m"
+};
+
+
 const userPool = new CognitoUserPool(poolData);
 
 export default function LoginForm() {
@@ -22,33 +27,35 @@ export default function LoginForm() {
             onSuccess: (session) => {
                 setBusy(false);
                 const idToken = session.getIdToken();
-                const p = idToken.payload; // sub, email, name, אולי גם address
+                const p = idToken.payload;
 
-                // נשמור בסיסית מהטוקן
                 const base = {
                     sub: p.sub,
                     name: p.name || p.email,
                     email: p.email,
-                    address: p.address || '',          
-                    idToken: idToken.getJwtToken()
+                    idToken: idToken.getJwtToken(),
                 };
-                localStorage.setItem('pp_user', JSON.stringify(base));
 
-                if (!base.address) {
-                    //const user = new CognitoUser({ Username: p.email, Pool: userPool });
-                    user.getUserAttributes((err, attrs) => {
-                        if (!err && Array.isArray(attrs)) {
-                            const addr = attrs.find(a => a.getName?.() === 'address')?.getValue?.();
-                            if (addr) {
-                                const merged = { ...base, address: addr };
-                                localStorage.setItem('pp_user', JSON.stringify(merged));
-                            }
-                        }
-                        window.location.href = '/customerScreen';
-                    });
-                } else {
+                // שלוף תמיד את כל האטריביוטים כדי להשלים address ועוד
+                user.getUserAttributes((err, attrs) => {
+                    const obj = {};
+
+                    if (!err && Array.isArray(attrs)) {
+                        attrs.forEach(attr => {
+                            obj[attr.getName()] = attr.getValue();
+                        });
+                    }
+
+                    const merged = {
+                        ...base,
+                        address: obj['address'] || p.address || '',
+                        given_name: obj['given_name'] || '',
+                        family_name: obj['family_name'] || '',
+                    };
+
+                    localStorage.setItem('pp_user', JSON.stringify(merged));
                     window.location.href = '/customerScreen';
-                }
+                });
             },
             onFailure: (err) => {
                 setBusy(false);
@@ -94,7 +101,7 @@ export default function LoginForm() {
 
             {needsConfirm && (
                 <div style={{ textAlign: 'center', marginTop: 8 }}>
-                    <button type="button" className="resend-code-btn"
+                    <button type="button" className="confirm-account-btn"
                         onClick={handleNeedsConfirm}>
                         Confirm Account
                     </button>

@@ -44,7 +44,7 @@ async function getCoordinates(address) {
 }
 
 
-export default function CustomerScreen({ customer_id, customerName, customerMail, customer_address }) {
+export default function CustomerScreen({ /*customer_id, customerName, customerMail, customer_address*/ }) {
     const [orderItems, setOrderItems] = useState([]);
     const [orderSent, setOrderSent] = useState(false);
     const [customerAddressOrder, setCustomerAddressOrder] = useState(null);
@@ -55,6 +55,44 @@ export default function CustomerScreen({ customer_id, customerName, customerMail
     const [activeOrders, setActiveOrders] = useState([]);
 
     const [coords, setCoords] = React.useState(null);
+
+    useEffect(() => {
+        const userStr = localStorage.getItem("pp_user");
+        if (!userStr) {
+            console.warn("🔒 No user found, redirecting to login");
+            return window.location.href = "/login";
+        }
+
+        try {
+            const user = JSON.parse(userStr);
+            const token = user.idToken;
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const now = Math.floor(Date.now() / 1000);
+            if (payload.exp < now) {
+                console.warn("🔒 Token expired, redirecting to login");
+                localStorage.removeItem("pp_user");
+                return window.location.href = "/login";
+            }
+        } catch (e) {
+            console.error("🔒 Invalid token format, redirecting to login");
+            localStorage.removeItem("pp_user");
+            return window.location.href = "/login";
+        }
+    }, []);
+
+    const user = (() => {
+        try {
+            return JSON.parse(localStorage.getItem("pp_user") || "null");
+        } catch {
+            return null;
+        }
+    })();
+
+    const customer_id = user?.sub;
+    const customerName = user?.name;
+    const customerMail = user?.email;
+    const customer_address = user?.address;
+
 
 
     /*React.useEffect(() => {

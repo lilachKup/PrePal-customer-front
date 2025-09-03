@@ -6,6 +6,7 @@ const poolData = {
   UserPoolId: "us-east-1_TpeA6BAZD",
   ClientId: "56ic185te584076fcsarbqq93m"
 };
+
 const userPool = new CognitoUserPool(poolData);
 
 export default function ConfirmRegistration() {

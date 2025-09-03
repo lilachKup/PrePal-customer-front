@@ -12,6 +12,7 @@ const poolData = {
   ClientId: "56ic185te584076fcsarbqq93m"
 };
 
+
 const userPool = new CognitoUserPool(poolData);
 
 
@@ -30,37 +31,43 @@ export default function RegisterForm() {
   const [customerName, setCustomerName] = useState('');
   const [showLoginButton, setShowLoginButton] = useState(false);
 
+  const sanitizeName = (txt) =>
+    (txt || '')
+      .replace(/[\u200E\u200F\u202A-\u202E]/g, '') // מסיר תווים בלתי נראים (RTL markers)
+      .replace(/[^\p{L}\s'-]/gu, '')              // מסיר תווים זרים
+      .trim();
 
-  const handleRegister = () => {
+  const handleRegister = (e) => {
 
-    if (!email || !password || !phoneNumber || !city || !customerName) {
-      setMessage("❌ All fields must be filled");
-      return;
-    }
+    e.preventDefault();
+    setMessage('');
+    const cleanName = sanitizeName(customerName);
+
 
     if (!/^\d{9}$/.test(phoneNumber)) {
-      setMessage("❌ Invalid phone number (must be 9 digits)");
+      setMessage("Invalid phone number (must be 9 digits)");
       return;
     }
 
     const attributes = [
       new CognitoUserAttribute({ Name: 'email', Value: email }),
       new CognitoUserAttribute({ Name: 'phone_number', Value: `+972${phoneNumber}` }),
-      new CognitoUserAttribute({ Name: 'name', Value: customerName }),
+      new CognitoUserAttribute({ Name: 'name', Value: cleanName }),
       new CognitoUserAttribute({ Name: 'address', Value: `${city}, ${street}, ${houseNumber}` }),
     ];
 
     userPool.signUp(email, password, attributes, null, async (err, result) => {
+      console.log(`Email: ${email}`, `Password: ${password}`, `Phone Number: ${phoneNumber}`, `Customer Name: ${customerName}`, `Address: ${city}, ${street}, ${houseNumber}`);
       if (err) {
         console.error(err);
-        setMessage('❌ ' + err.message);
+        setMessage(err.message);
 
         if (err.code === 'UsernameExistsException') {
           setShowLoginButton(true);
         }
       } else {
         console.log('✔️ Registered successfully', result);
-        setMessage('✔️ Registered successfully!');
+        setMessage('Registered successfully!');
         setRegistrationSuccess(true);
 
         try {
@@ -78,7 +85,7 @@ export default function RegisterForm() {
           }, 500);
         } catch (err) {
           //console.error("❌ Error creating market in DB:", err);
-          setMessage("❌ Failed to create market. Please try again.");
+          setMessage("Failed to create market. Please try again.");
         }
       }
     });
@@ -99,17 +106,17 @@ export default function RegisterForm() {
           location: address,
           email,
           store_hours: storeHours,
-
+  
           store_coordinates: `${coordinatesFromAddress.lat},${coordinatesFromAddress.lon}`
           //coordinates: `${check.lat},${check.lon}`
         })
       });
-
+  
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Failed to create market");
       }
-
+  
       console.log("🏪 Market successfully created in DB");
     } catch (err) {
       console.error("❌ Error creating market in DB:", err);
@@ -128,15 +135,21 @@ export default function RegisterForm() {
   }
 
   const handleLoginButton = () => {
-    auth.signinRedirect();
+    window.location.href = '/?tab=login';
   };
 
   return (
-    <div className="register-form">
+    <form className="register-form" onSubmit={handleRegister}>
       <h2 className="form-title">Sign Up</h2>
 
       <label>Email:</label>
-      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="form-input" />
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="form-input"
+        required
+      />
 
       <label>Password:</label>
       <div className="password-container">
@@ -145,6 +158,7 @@ export default function RegisterForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="form-input password-input"
+          required
         />
         <span className="toggle-password" onClick={() => setShowPassword(!showPassword)}>
           {showPassword ? "🙈" : "👁"}
@@ -160,38 +174,67 @@ export default function RegisterForm() {
           onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
           maxLength={9}
           className="phone-input"
+          required
         />
       </div>
 
       <label>City:</label>
-      <input type="text" value={city} onChange={(e) => setCity(e.target.value)} className="form-input" />
+      <input
+        type="text"
+        value={city}
+        onChange={(e) => setCity(e.target.value)}
+        className="form-input"
+        required
+      />
 
       <label>Street:</label>
-      <input type="text" value={street} onChange={(e) => setStreet(e.target.value)} className="form-input" />
+      <input
+        type="text"
+        value={street}
+        onChange={(e) => setStreet(e.target.value)}
+        className="form-input"
+      />
 
       <label>House Number:</label>
-      <input type="text" value={houseNumber} onChange={(e) => setHouseNumber(e.target.value)} className="form-input" />
+      <input
+        type="text"
+        value={houseNumber}
+        onChange={(e) => setHouseNumber(e.target.value)}
+        className="form-input"
+      />
 
       <label>Customer name:</label>
-      <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="form-input" />
+      <input
+        type="text"
+        value={customerName}
+        onChange={(e) => setCustomerName(e.target.value)}
+        className="form-input"
+        required
+      />
 
-      <button onClick={handleRegister} className="submit-btn">Sign Up</button>
+      <button type="submit" className="submit-btn">Sign Up</button>
 
       <p className="form-message">{message}</p>
 
-      {showLoginButton && (
-        <div style={{ textAlign: 'center', marginTop: '5px' }}>
-          <button
-            className="login-btn"
-            onClick={handleLoginButton}>
-            Log In
-          </button>
-        </div>
-      )}
 
-      {registrationSuccess && (
-        <p className="form-message">✔️ Please check your email to confirm</p>
-      )}
-    </div>
+      {
+        showLoginButton && (
+          <div style={{ textAlign: 'center', marginTop: '5px' }}>
+            <button
+              type="button"
+              className="login-btn"
+              onClick={handleLoginButton}>
+              Log In
+            </button>
+          </div>
+        )
+      }
+
+      {
+        registrationSuccess && (
+          <p className="form-message">Please check your email to confirm</p>
+        )
+      }
+    </form >
   );
 }
