@@ -7,24 +7,20 @@ import TopBar from "../ToolBar/TopBar";
 import PreviousOrders from "./PreviousOrders";
 import ActiveOrders from "./ActiveOrders";
 
-// Address validation utils (Israel-only)
+// Israel-only address validation utils
 import {
     validateILAddress,
     formatAddress,
     geoErrorToMessage,
 } from "../utils/checkValidAddress";
 
-// Parse "City, Street, Number" to parts
+// Parse "City, Street, Number" into parts
 function parseAddress3(s = "") {
     const parts = String(s).split(",").map(p => p.trim()).filter(Boolean);
-    return {
-        city: parts[0] || "",
-        street: parts[1] || "",
-        apt: parts[2] || "", // we don't really use apt here
-    };
+    return { city: parts[0] || "", street: parts[1] || "", apt: parts[2] || "" };
 }
 
-// Normalize yes/no prompt value
+// Normalize yes/no
 function toYesNo(str) {
     if (!str) return null;
     const v = String(str).trim().toLowerCase();
@@ -38,17 +34,44 @@ export default function CustomerScreen() {
     const [orderSent, setOrderSent] = useState(false);
     const [customerAddressOrder, setCustomerAddressOrder] = useState(null);
     const [coords, setCoords] = useState(null); // {lat, lng} when validated
-    const chatCreated = useRef(false);
     const [chatId, setChatId] = useState(null);
     const [storeId, setStoreId] = useState(null);
     const [olderOrderItems, setOlderOrderItems] = useState([]);
     const [activeOrders, setActiveOrders] = useState([]);
+    const chatPanelRef = useRef(null);
+    const [chatPrefill, setChatPrefill] = useState(""); // text to prefill the chat input
 
-    // --- session guard ---
+    // When clicking a previous order: prefill chat only (do NOT push to Current Order)
+    const loadOrderToChat = (arg) => {
+        // Support both signatures:
+        // 1) onSelectOrder(order)
+        // 2) onSelectOrder({ order, chatText })
+        const order = Array.isArray(arg?.items) ? arg : arg?.order;
+        const explicitText = arg?.chatText;
+
+        let line = explicitText;
+        if (!line && order) {
+            const parts = (order.items || []).map((it) => {
+                if (typeof it === "string") {
+                    const [name, qty] = it.split(":").map(s => String(s || "").trim());
+                    return `${name} x ${qty || 1}`;
+                }
+                const name = String(it?.name ?? it?.product ?? "item");
+                const qty  = Number(it?.quantity ?? it?.qty ?? 1);
+                return `${name} x ${qty}`;
+            });
+            line = parts.join(", ");
+        }
+
+        setChatPrefill(line ? `Please add: ${line}` : "");
+        // Do NOT setOrderItems here – user will send to the bot first
+        chatPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    // Session guard
     useEffect(() => {
         const userStr = localStorage.getItem("pp_user");
         if (!userStr) {
-            console.warn("No user found, redirecting to login");
             window.location.href = "/login";
             return;
         }
@@ -58,52 +81,41 @@ export default function CustomerScreen() {
             const payload = JSON.parse(atob(token.split(".")[1]));
             const now = Math.floor(Date.now() / 1000);
             if (payload.exp < now) {
-                console.warn("Token expired, redirecting to login");
                 localStorage.removeItem("pp_user");
                 window.location.href = "/login";
             }
         } catch {
-            console.error("Invalid token, redirecting to login");
             localStorage.removeItem("pp_user");
             window.location.href = "/login";
         }
     }, []);
 
-    // current user (after the guard above)
+    // Current user (after guard)
     const user = (() => {
-        try {
-            return JSON.parse(localStorage.getItem("pp_user") || "null");
-        } catch {
-            return null;
-        }
+        try { return JSON.parse(localStorage.getItem("pp_user") || "null"); }
+        catch { return null; }
     })();
 
     const customer_id = user?.sub;
     const customerName = user?.name;
     const customerMail = user?.email;
-    const customer_address = user?.address; // string like "City, Street, Number"
+    const customer_address = user?.address;
 
-    // --- ask delivery address on mount ---
+    // Ask for delivery address on mount
     useEffect(() => {
-        if (!customer_address) return; // if no saved address, skip (or you could force entering one)
-
+        if (!customer_address) return;
         (async () => {
-            // Ask whether to use saved address
             let initial = prompt("Use your saved signup address? (yes/no)");
             let yn = toYesNo(initial);
-            if (!yn) yn = "yes"; // default to saved address
+            if (!yn) yn = "yes";
 
             if (yn === "yes") {
-                // Use saved address without forcing validation here
                 setCustomerAddressOrder(customer_address);
-                setCoords(null); // coords will be resolved on send if needed
+                setCoords(null);
                 return;
             }
 
-            // yn === "no" → ask for a new address in a loop until valid or user cancels
-            // User can type 'cancel' in any prompt to fall back to saved address.
-            // All prompts are blocking, so this loop is safe here.
-            // We use validateILAddress (Lambda + reverse) to ensure Israel.
+            // Ask until valid address in Israel or user cancels to saved address
             while (true) {
                 const city = prompt("Enter city (required) or type 'cancel' to use saved address:");
                 if (city === null || String(city).trim().toLowerCase() === "cancel") {
@@ -126,11 +138,7 @@ export default function CustomerScreen() {
                     break;
                 }
 
-                const addressStr = formatAddress({
-                    city,
-                    street: `${street} ${number}`,
-                    apt: "",
-                });
+                const addressStr = formatAddress({ city, street: `${street} ${number}`, apt: "" });
 
                 try {
                     const { coords: c } = await validateILAddress({
@@ -138,24 +146,21 @@ export default function CustomerScreen() {
                         street: `${street} ${number}`,
                         apt: "",
                     });
-                    // Valid in Israel → use it and store coords
                     setCustomerAddressOrder(addressStr);
-                    setCoords(c); // {lat, lng}
+                    setCoords(c);
                     break;
                 } catch (err) {
                     alert(geoErrorToMessage(err));
-                    // Loop again; user can type 'cancel' in next iteration to fallback
                 }
             }
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [customer_address]);
 
-    // --- load orders (oldest + active) ---
+    // Load previous + active orders
     useEffect(() => {
         (async () => {
             try {
-                // Oldest orders
                 const oldestRes = await fetch(
                     `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/getOldestsOrders/${customer_id}`,
                     { method: "GET", headers: { "Content-Type": "application/json" } }
@@ -179,7 +184,6 @@ export default function CustomerScreen() {
                 }));
                 setOlderOrderItems(parsedOldest);
 
-                // Active orders
                 const activeRes = await fetch(
                     `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/activeOrders/${customer_id}`,
                     { method: "GET", headers: { "Content-Type": "application/json" } }
@@ -192,9 +196,9 @@ export default function CustomerScreen() {
         })();
     }, [customer_id]);
 
+    // Bot returned items -> now we do update Current Order
     const handleNewItems = (itemsList, store_id) => {
         if (!Array.isArray(itemsList)) return;
-
         const newItems = itemsList.map(item => ({
             name: item.Name,
             image: item.Image || "https://img.icons8.com/ios-filled/50/cccccc/shopping-cart.png",
@@ -211,15 +215,14 @@ export default function CustomerScreen() {
             return;
         }
 
-        // Ensure we have coords. If not (using saved address), resolve them now.
+        // Ensure coords exist
         let coordsToUse = coords;
         if (!coordsToUse) {
-            // Try to derive city/street/number from saved string
             const parsed = parseAddress3(customerAddressOrder);
             try {
                 const { coords: c } = await validateILAddress({
                     city: parsed.city,
-                    street: parsed.street, // may contain "Street name" (could also hold "street + number")
+                    street: parsed.street,
                     apt: parsed.apt,
                 });
                 coordsToUse = c;
@@ -250,8 +253,7 @@ export default function CustomerScreen() {
                     body: JSON.stringify(orderData),
                 }
             );
-            const data = await res.json().catch(() => ({}));
-            console.log("Order response:", data);
+            await res.json().catch(() => ({}));
             setOrderSent(true);
         } catch (err) {
             console.error("Send order failed:", err);
@@ -261,14 +263,6 @@ export default function CustomerScreen() {
 
     return (
         <>
-            {console.log("Rendering CustomerScreen with:", {
-                customer_id,
-                customerName,
-                customerMail,
-                customer_address,
-                customerAddressOrder,
-                coords,
-            })}
             <TopBar
                 onLogin={() => console.log("Login clicked")}
                 onLogout={() => console.log("Logout clicked")}
@@ -277,17 +271,21 @@ export default function CustomerScreen() {
 
             <div className="customer-layout">
                 <div className="old-orders">
-                    <PreviousOrders orders={olderOrderItems} />
+                    <PreviousOrders
+                        orders={olderOrderItems}
+                        onSelectOrder={loadOrderToChat}
+                    />
                     <ActiveOrders orders={activeOrders} />
                 </div>
 
                 {/* Chat Area */}
-                <div className="chat-panel">
+                <div className="chat-panel" ref={chatPanelRef}>
                     <h2 className="section-title">Chat with PrepPal</h2>
                     <OrderChat
                         onNewItem={handleNewItems}
                         customer_id={customer_id}
                         customer_address={customerAddressOrder}
+                        prefillText={chatPrefill}   // << prefill the input, no auto-send
                     />
                 </div>
 
