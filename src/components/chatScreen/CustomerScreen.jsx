@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import OrderChat from "./OrderChat";
 import CurrentOrder from "./CurrentOrder";
 import './CustomerScreen.css';
-import TopBar from "./TopBar";
+import TopBar from "../ToolBar/TopBar";
 import PreviousOrders from "./PreviousOrders";
 import ActiveOrders from "./ActiveOrders";
 
@@ -53,6 +53,7 @@ export default function CustomerScreen({ /*customer_id, customerName, customerMa
     const [storeId, setStoreId] = useState(null);
     const [olderOrderItems, setOlderOrderItems] = useState([]);
     const [activeOrders, setActiveOrders] = useState([]);
+    const [showProfile, setShowProfile] = useState(false);
 
     const [coords, setCoords] = React.useState(null);
 

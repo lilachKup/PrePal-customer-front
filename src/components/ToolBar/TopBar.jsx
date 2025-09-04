@@ -1,7 +1,9 @@
 // src/components/TopBar.jsx
 import React from "react";
+import { useState } from "react";
 import { CognitoUserPool } from "amazon-cognito-identity-js";
 import "./TopBar.css";
+import ProfileModal from "./ProfileModal";
 
 const poolData = {
   UserPoolId: "us-east-1_TpeA6BAZD",
@@ -11,6 +13,9 @@ const poolData = {
 const userPool = new CognitoUserPool(poolData);
 
 const TopBar = () => {
+
+  const [showProfile, setShowProfile] = useState(false);
+
   const handleLogout = () => {
     // 1. מחיקת מידע מה־localStorage
     localStorage.removeItem("pp_user");
@@ -26,13 +31,26 @@ const TopBar = () => {
     window.location.href = "/login";
   };
 
+
+
+  const handleOrderLocation = () => {
+    alert("Order Location pressed");
+  };
+
   return (
     <div className="topbar">
       <h2 className="logo">PrepPal</h2>
       <div className="actions">
         <button onClick={handleLogout}>Logout</button>
-        <button onClick={() => alert("Profile pressed")}>Profile</button>
-        <button onClick={() => alert("Order Location pressed")}>Order Location</button>
+        <button onClick={() => setShowProfile(true)}>Profile</button>
+        <button onClick={() => alert("Order Location pressed")}>?new chat?</button>
+
+        <ProfileModal
+        open={showProfile}
+        onClose={() => setShowProfile(false)}
+        onSaved={() => {
+        }}
+      />
       </div>
     </div>
   );
