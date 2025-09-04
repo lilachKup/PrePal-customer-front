@@ -53,7 +53,6 @@ export default function CustomerScreen({ /*customer_id, customerName, customerMa
     const [storeId, setStoreId] = useState(null);
     const [olderOrderItems, setOlderOrderItems] = useState([]);
     const [activeOrders, setActiveOrders] = useState([]);
-    const [showProfile, setShowProfile] = useState(false);
 
     const [coords, setCoords] = React.useState(null);
 
