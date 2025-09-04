@@ -4,6 +4,8 @@ import { useState } from "react";
 import { CognitoUserPool } from "amazon-cognito-identity-js";
 import "./TopBar.css";
 import ProfileModal from "./ProfileModal";
+import prepal_logo from "../utils/prepal_logo.png";
+
 
 const poolData = {
   UserPoolId: "us-east-1_TpeA6BAZD",
@@ -39,18 +41,20 @@ const TopBar = () => {
 
   return (
     <div className="topbar">
-      <h2 className="logo">PrepPal</h2>
-      <div className="actions">
+      <div className="brand">
+        <h2 className="logo">PrePal</h2>
+        <img src={prepal_logo} alt="PrePal Logo" className="logo-image" />
+      </div>      <div className="actions">
         <button onClick={handleLogout}>Logout</button>
         <button onClick={() => setShowProfile(true)}>Profile</button>
         <button onClick={() => alert("Order Location pressed")}>?new chat?</button>
 
         <ProfileModal
-        open={showProfile}
-        onClose={() => setShowProfile(false)}
-        onSaved={() => {
-        }}
-      />
+          open={showProfile}
+          onClose={() => setShowProfile(false)}
+          onSaved={() => {
+          }}
+        />
       </div>
     </div>
   );
