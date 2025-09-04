@@ -36,7 +36,6 @@ export default function LoginForm() {
                     idToken: idToken.getJwtToken(),
                 };
 
-                // שלוף תמיד את כל האטריביוטים כדי להשלים address ועוד
                 user.getUserAttributes((err, attrs) => {
                     const obj = {};
 

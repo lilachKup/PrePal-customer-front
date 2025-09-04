@@ -21,7 +21,6 @@ const OrderChat = ({ onNewItem, customer_id, customer_address }) => {
     }
   }, [chatLog]);
 
-  // 🔒 חסימת שליחה בזמן שהבוט חושב + כשאין טקסט
   const handleSend = async () => {
     if (isBotTyping) return;
     if (!message.trim()) return;
