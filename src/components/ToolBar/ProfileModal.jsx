@@ -1,4 +1,4 @@
-// src/components/ProfileModal.jsx
+// src/components/ToolBar/ProfileModal.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import "./ProfileModal.css";
@@ -7,50 +7,48 @@ import {
   CognitoUser,
 } from "amazon-cognito-identity-js";
 
+// ✅ Israel address validator utils
+import {
+  validateILAddress,
+  formatAddress,
+  geoErrorToMessage,
+} from "../utils/checkValidAddress";
+
 const poolData = {
   UserPoolId: "us-east-1_TpeA6BAZD",
-  ClientId: "56ic185te584076fcsarbqq93m"
+  ClientId: "56ic185te584076fcsarbqq93m",
 };
 
 const userPool = new CognitoUserPool(poolData);
 
-function updateAddressInCognito(address, callback) {
+// Wrap Cognito address update with a Promise
+function updateAddressInCognito(address) {
   const user = userPool.getCurrentUser();
-
-  if (!user) {
-    console.warn("❌ No user found");
-    callback(false);
-    return;
-  }
-
-  user.getSession((err, session) => {
-    if (err || !session?.isValid()) {
-      console.warn("❌ Invalid session:", err || "Session invalid");
-      callback(false);
-      return;
+  return new Promise((resolve) => {
+    if (!user) {
+      console.warn("❌ No user found");
+      return resolve(false);
     }
-
-    user.updateAttributes(
-      [
-        {
-          Name: "address",
-          Value: address,
-        },
-      ],
-      (err, result) => {
-        if (err) {
-          console.error("❌ Failed to update address in Cognito:", err);
-          callback(false);
-        } else {
-          console.log("✅ Address updated in Cognito:", result);
-          callback(true);
-        }
+    user.getSession((err, session) => {
+      if (err || !session?.isValid()) {
+        console.warn("❌ Invalid session:", err || "Session invalid");
+        return resolve(false);
       }
-    );
+      user.updateAttributes(
+          [{ Name: "address", Value: address }],
+          (err) => {
+            if (err) {
+              console.error("❌ Failed to update address in Cognito:", err);
+              resolve(false);
+            } else {
+              console.log("✅ Address updated in Cognito");
+              resolve(true);
+            }
+          }
+      );
+    });
   });
 }
-
-
 
 // ---- helpers ----
 function decodeJwt(token) {
@@ -93,12 +91,11 @@ function saveUserToStorage(partial) {
   }
 }
 
-
 // ---- component ----
 export default function ProfileModal({ open, onClose, onSaved }) {
   const initial = useMemo(() => loadUserFromStorage(), [open]);
   const [form, setForm] = useState(
-    initial || { sub: "", name: "", email: "", address: "" }
+      initial || { sub: "", name: "", email: "", address: "" }
   );
 
   const [status, setStatus] = useState("");
@@ -106,57 +103,33 @@ export default function ProfileModal({ open, onClose, onSaved }) {
   const [street, setStreet] = useState("");
   const [number, setNumber] = useState("");
 
-
-
-  function formatAddress(addr) {
+  // Parse "City, Street, Number" or similar shapes to inputs
+  function explodeAddress(addr) {
     if (!addr) return;
-
     let raw = "";
-
     if (typeof addr === "object") {
-      // 1️⃣ אובייקט עם שדות רגילים
       if ("city" in addr || "street" in addr || "number" in addr) {
         const { city: c = "", street: s = "", number: n = "" } = addr;
         raw = `${c}, ${s}, ${n}`;
-      }
-      // 2️⃣ אובייקט עם שדה formatted
-      else if ("formatted" in addr && typeof addr.formatted === "string") {
+      } else if ("formatted" in addr && typeof addr.formatted === "string") {
         raw = addr.formatted;
       }
-    }
-    // 3️⃣ מחרוזת רגילה
-    else if (typeof addr === "string") {
+    } else if (typeof addr === "string") {
       raw = addr;
     }
-
-    // פירוק למרכיבים
-    const parts = raw.split(",").map(p => p?.trim() ?? "");
+    const parts = raw.split(",").map((p) => p?.trim() ?? "");
     const [c = "", s = "", n = ""] = parts;
-
-    console.log("✅ Parsed address:", { c, s, n });
-
     setCity(c);
     setStreet(s);
     setNumber(n);
   }
 
-
-
-
-  // עדכון טופס כשנפתח מחדש
+  // Refresh when modal opens
   useEffect(() => {
     if (open) {
       const fresh = loadUserFromStorage();
       setForm(fresh || { sub: "", name: "", email: "", address: "" });
-
-      // ⬅️ זוהי השורה החסרה:
-      if (fresh?.address) {
-        console.log("📦 raw address from storage:", fresh?.address);
-        formatAddress(fresh.address);
-        console.log("🏙️ Parsed address:", { city, street, number });
-
-      }
-
+      if (fresh?.address) explodeAddress(fresh.address);
       setStatus("");
       document.body.style.overflow = "hidden";
     }
@@ -165,8 +138,7 @@ export default function ProfileModal({ open, onClose, onSaved }) {
     };
   }, [open]);
 
-
-  // ESC לסגירה
+  // Close on ESC
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => e.key === "Escape" && onClose?.();
@@ -181,106 +153,139 @@ export default function ProfileModal({ open, onClose, onSaved }) {
     setForm((f) => ({ ...f, [name]: value }));
   };
 
-  const onSave = (e) => {
+  const onSave = async (e) => {
     e.preventDefault();
-    setStatus("Saving...");
 
-    const address = `${city}, ${street}, ${number}`.trim();
+    // Build/normalize address string
+    const addressStr = formatAddress({
+      city,
+      street: `${street} ${number}`.trim(),
+      apt: "",
+    });
 
+    // 1) Validate address is in Israel
+    setStatus("Validating address...");
+    try {
+      await validateILAddress({
+        city,
+        street: `${street} ${number}`.trim(),
+        apt: "",
+      });
+    } catch (err) {
+      setStatus(geoErrorToMessage(err)); // keep inputs as-is for correction
+      return;
+    }
+
+    // 2) Save to local storage (so the app picks it up immediately)
     const localOk = saveUserToStorage({
       phone_number: form.phone_number,
       name: form.name,
       email: form.email,
-      address,
+      address: addressStr,
     });
 
-    updateAddressInCognito(address, (cognitoOk) => {
-      const finalStatus = localOk && cognitoOk ? "Saved ✅" : "Partial save ⚠️";
-      setStatus(finalStatus);
-      if (localOk && cognitoOk) onSaved?.({ ...form, address });
-      setTimeout(() => setStatus(""), 1500);
-    });
+    // 3) Save to Cognito profile
+    setStatus("Saving...");
+    const cognitoOk = await updateAddressInCognito(addressStr);
+
+    // 4) Finish
+    const finalStatus = localOk && cognitoOk ? "Saved ✅" : "Partial save ⚠️";
+    setStatus(finalStatus);
+    if (localOk && cognitoOk) onSaved?.({ ...form, address: addressStr });
+    setTimeout(() => setStatus(""), 1500);
   };
 
-
-
   const content = (
-    <div className="pp-modal-backdrop" onClick={onClose}>
-      <div
-        className="pp-modal-panel"
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="pp-modal-header">
-          <h2>Profile</h2>
-          <button className="pp-modal-close" onClick={onClose} aria-label="Close">×</button>
-        </div>
-
-        {!initial ? (
-          <div className="pp-modal-body">
-            <p>You are not logged in.</p>
+      <div className="pp-modal-backdrop" onClick={onClose}>
+        <div
+            className="pp-modal-panel"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+        >
+          <div className="pp-modal-header">
+            <h2>Profile</h2>
+            <button className="pp-modal-close" onClick={onClose} aria-label="Close">
+              ×
+            </button>
           </div>
-        ) : (
-          <form onSubmit={onSave} className="pp-modal-body">
-            <label className="pp-field">
-              <span>Name</span>
-              <input
-                name="name"
-                value={form.name}
-                readOnly
-                placeholder="Your name"
-              />
-            </label>
 
-            <label className="pp-field">
-              <span>Phone Number</span>
-              <input
-                name="phone_number"
-                value={form.phone_number}
-                readOnly
-                placeholder="Your phone number"
-              />
-            </label>
+          {!initial ? (
+              <div className="pp-modal-body">
+                <p>You are not logged in.</p>
+              </div>
+          ) : (
+              <form onSubmit={onSave} className="pp-modal-body">
+                <label className="pp-field">
+                  <span>Name</span>
+                  <input name="name" value={form.name} readOnly placeholder="Your name" />
+                </label>
 
-            <label className="pp-field">
-              <span>Email</span>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                readOnly
-                placeholder="name@example.com"
-              />
-            </label>
+                <label className="pp-field">
+                  <span>Phone Number</span>
+                  <input
+                      name="phone_number"
+                      value={form.phone_number}
+                      readOnly
+                      placeholder="Your phone number"
+                  />
+                </label>
 
-            <div className="pp-address-row">
-              <label className="pp-field">
-                <span>City</span>
-                <input name="city" value={city} onChange={e => setCity(e.target.value)} required />
-              </label>
+                <label className="pp-field">
+                  <span>Email</span>
+                  <input
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      readOnly
+                      placeholder="name@example.com"
+                  />
+                </label>
 
-              <label className="pp-field">
-                <span>Street</span>
-                <input name="street" value={street} onChange={e => setStreet(e.target.value)} />
-              </label>
+                {/* Address row */}
+                <div className="pp-address-row">
+                  <label className="pp-field">
+                    <span>City</span>
+                    <input
+                        name="city"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        required
+                    />
+                  </label>
 
-              <label className="pp-field">
-                <span>Number</span>
-                <input name="number" value={number} onChange={e => setNumber(e.target.value)} />
-              </label>
-            </div>
+                  <label className="pp-field">
+                    <span>Street</span>
+                    <input
+                        name="street"
+                        value={street}
+                        onChange={(e) => setStreet(e.target.value)}
+                    />
+                  </label>
 
+                  <label className="pp-field">
+                    <span>Number</span>
+                    <input
+                        name="number"
+                        value={number}
+                        onChange={(e) => setNumber(e.target.value)}
+                    />
+                  </label>
+                </div>
 
-            <div className="pp-modal-actions">
-              <button type="submit" className="pp-btn pp-btn-primary">Save</button>
-              <button type="button" className="pp-btn" onClick={onClose}>Close</button>
-              {status && <span className="pp-status">{status}</span>}
-            </div>
-          </form>
-        )}
+                <div className="pp-modal-actions">
+                  <button type="submit" className="pp-btn pp-btn-primary">
+                    Save
+                  </button>
+                  <button type="button" className="pp-btn" onClick={onClose}>
+                    Close
+                  </button>
+                  {status && <span className="pp-status">{status}</span>}
+                </div>
+              </form>
+          )}
+        </div>
       </div>
-    </div>
   );
 
   return createPortal(content, document.body);

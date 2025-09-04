@@ -28,7 +28,7 @@ function App() {
               customer_id={(auth.user?.profile?.sub) || cached?.sub}
               customerName={(auth.user?.profile?.name) || cached?.name}
               customerMail={(auth.user?.profile?.email) || cached?.email}
-              customer_address={(auth.user?.profile?.address) || cached?.address || ''}
+              customer_address={(auth.user?.profile?.address.formatted.split(",".trim())) || cached?.address || ''}
             />
           ) : (
             <Navigate to="/?tab=login" replace />

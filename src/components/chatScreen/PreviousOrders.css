@@ -24,3 +24,9 @@
 }
 
 .previous-orders { margin: 0; }
+
+.orders-item:hover {
+    background: #f6f2ff;              /* גוון בהיר */
+    border-color: #d7ccff;            /* מסגרת מעט סגולה */
+    box-shadow: 0 2px 10px rgba(80, 60, 200, .12);
+}
