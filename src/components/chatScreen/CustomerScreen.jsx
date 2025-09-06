@@ -1,5 +1,5 @@
 // src/components/chatScreen/CustomerScreen.jsx
-import React, {useState, useEffect, useRef} from "react";
+import React, { useState, useEffect, useRef } from "react";
 import OrderChat from "./OrderChat";
 import CurrentOrder from "./CurrentOrder";
 import "./CustomerScreen.css";
@@ -17,7 +17,7 @@ import {
 // Parse "City, Street, Number" into parts
 function parseAddress3(s = "") {
     const parts = String(s).split(",").map(p => p.trim()).filter(Boolean);
-    return {city: parts[0] || "", street: parts[1] || "", apt: parts[2] || ""};
+    return { city: parts[0] || "", street: parts[1] || "", apt: parts[2] || "" };
 }
 
 // Normalize yes/no
@@ -48,10 +48,27 @@ export default function CustomerScreen() {
         setCoords(null);                              // נכריח ולידציה מחדש אם צריך
     };
 
+    useEffect(() => { //LILACHNEW
+        try {
+            const saved = localStorage.getItem("pp_order_items");
+            if (saved) {
+                const items = JSON.parse(saved);
+                if (Array.isArray(items)) setOrderItems(items);
+            }
+        } catch { }
+    }, []); //LILACHNEW
+
+    useEffect(() => { //LILACHNEW
+        try {
+            localStorage.setItem("pp_order_items", JSON.stringify(orderItems));
+        } catch { }
+    }, [orderItems]); //LILACHNEW
+
     const startNewChat = async (addrOverride) => {
         try {
             // clear order
             setOrderItems([]);
+            localStorage.removeItem("pp_order_items");
             setOrderSent(false);
             setStoreId(null);
 
@@ -93,6 +110,8 @@ export default function CustomerScreen() {
         const order = Array.isArray(arg?.items) ? arg : arg?.order;
         const explicitText = arg?.chatText;
 
+
+
         let line = explicitText;
         if (!line && order) {
             const parts = (order.items || []).map((it) => {
@@ -107,9 +126,9 @@ export default function CustomerScreen() {
             line = parts.join(", ");
         }
 
-        setChatPrefill(line ? `Please add: ${line}` : "");
+        setChatPrefill(line ? `${line}` : "");
         // Do NOT setOrderItems here – user will send to the bot first
-        chatPanelRef.current?.scrollIntoView({behavior: "smooth", block: "start"});
+        chatPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
     // Session guard
@@ -187,10 +206,10 @@ export default function CustomerScreen() {
                         break;
                     }
 
-                    const addressStr = formatAddress({city, street: `${street} ${number}`, apt: ""});
+                    const addressStr = formatAddress({ city, street: `${street} ${number}`, apt: "" });
 
                     try {
-                        const {coords: c} = await validateILAddress({
+                        const { coords: c } = await validateILAddress({
                             city,
                             street: `${street} ${number}`,
                             apt: "",
@@ -213,7 +232,7 @@ export default function CustomerScreen() {
             try {
                 const oldestRes = await fetch(
                     `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/getOldestsOrders/${customer_id}`,
-                    {method: "GET", headers: {"Content-Type": "application/json"}}
+                    { method: "GET", headers: { "Content-Type": "application/json" } }
                 );
                 const oldestJson = await oldestRes.json();
                 const oldestOrdersArr = Array.isArray(oldestJson?.orders) ? oldestJson.orders : [];
@@ -221,7 +240,7 @@ export default function CustomerScreen() {
                     items: (order.items || []).map(it => {
                         if (typeof it === "string") {
                             const [name, quantity] = it.split(":").map(s => s.trim());
-                            return {name, quantity: Number.parseInt(quantity || "1", 10) || 1};
+                            return { name, quantity: Number.parseInt(quantity || "1", 10) || 1 };
                         }
                         if (it && typeof it === "object") {
                             return {
@@ -229,14 +248,14 @@ export default function CustomerScreen() {
                                 quantity: Number(it.quantity ?? it.qty ?? 1),
                             };
                         }
-                        return {name: String(it), quantity: 1};
+                        return { name: String(it), quantity: 1 };
                     }),
                 }));
                 setOlderOrderItems(parsedOldest);
 
                 const activeRes = await fetch(
                     `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/activeOrders/${customer_id}`,
-                    {method: "GET", headers: {"Content-Type": "application/json"}}
+                    { method: "GET", headers: { "Content-Type": "application/json" } }
                 );
                 const activeJson = await activeRes.json();
                 setActiveOrders(Array.isArray(activeJson?.orders) ? activeJson.orders : []);
@@ -270,7 +289,7 @@ export default function CustomerScreen() {
         if (!coordsToUse) {
             const parsed = parseAddress3(customerAddressOrder);
             try {
-                const {coords: c} = await validateILAddress({
+                const { coords: c } = await validateILAddress({
                     city: parsed.city,
                     street: parsed.street,
                     apt: parsed.apt,
@@ -299,7 +318,7 @@ export default function CustomerScreen() {
                 "https://yv6baxe2i0.execute-api.us-east-1.amazonaws.com/dev/addOrderToStore",
                 {
                     method: "POST",
-                    headers: {"Content-Type": "application/json"},
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(orderData),
                 }
             );
@@ -327,7 +346,7 @@ export default function CustomerScreen() {
                         orders={olderOrderItems}
                         onSelectOrder={loadOrderToChat}
                     />
-                    <ActiveOrders orders={activeOrders}/>
+                    <ActiveOrders orders={activeOrders} />
                 </div>
 
                 {/* Chat Area */}
@@ -346,7 +365,7 @@ export default function CustomerScreen() {
                 {/* Order Area */}
                 <div className="order-panel">
                     <h2 className="section-title">Current Order</h2>
-                    <CurrentOrder items={orderItems}/>
+                    <CurrentOrder items={orderItems} />
                     <button
                         onClick={sendOrder}
                         className="send-order-btn"

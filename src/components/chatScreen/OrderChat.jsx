@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from "react";
 import "./OrderChat.css";
 
 export default function OrderChat({
-                                    onNewItem,
-                                    customer_id,
-                                    customer_address,
-                                    prefillText,
-                                    startingChatId,              // NEW: מאפשר להתחיל עם chat_id שמגיע מהורה
-                                  }) {
+  onNewItem,
+  customer_id,
+  customer_address,
+  prefillText,
+  startingChatId,              // NEW: מאפשר להתחיל עם chat_id שמגיע מהורה
+}) {
   const [message, setMessage] = useState("");
   const [chatLog, setChatLog] = useState([]);
   const [isBotTyping, setIsBotTyping] = useState(false);
@@ -36,6 +36,28 @@ export default function OrderChat({
       setChatLog([]); // התחלה נקייה
     }
   }, [startingChatId]);
+
+  const chatLogKey = (id) => (id ? `pp_chat_log_${id}` : null); //LILACHNEW
+
+  useEffect(() => { //LILACHNEW
+    if (!chatId) return;
+    try {
+      const key = chatLogKey(chatId);
+      const saved = key && localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setChatLog(parsed);
+      }
+    } catch { }
+  }, [chatId]); //LILACHNEW
+
+  useEffect(() => { //LILACHNEW
+    if (!chatId) return;
+    try {
+      const key = chatLogKey(chatId);
+      if (key) localStorage.setItem(key, JSON.stringify(chatLog));
+    } catch { }
+  }, [chatId, chatLog]); //LILACHNEW
 
   // Prefill input (do not auto send)
   useEffect(() => {
@@ -73,12 +95,12 @@ export default function OrderChat({
 
       if (isNewChat) {
         const initRes = await fetch(
-            `https://zukr2k1std.execute-api.us-east-1.amazonaws.com/dev/client/createchat?client_id=${customer_id}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ address: customer_address }),
-            }
+          `https://zukr2k1std.execute-api.us-east-1.amazonaws.com/dev/client/createchat?client_id=${customer_id}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address: customer_address }),
+          }
         );
         const initData = await initRes.json();
 
@@ -94,25 +116,25 @@ export default function OrderChat({
       }
 
       const res = await fetch(
-          "https://zukr2k1std.execute-api.us-east-1.amazonaws.com/dev/client/chat",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: currentChatId,
-              client_id: customer_id,
-              message: userMessage.content,
-              create_chat: false,
-            }),
-          }
+        "https://zukr2k1std.execute-api.us-east-1.amazonaws.com/dev/client/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: currentChatId,
+            client_id: customer_id,
+            message: userMessage.content,
+            create_chat: false,
+          }),
+        }
       );
 
       const data = await res.json();
 
       const botMessage =
-          data.message ||
-          data.response?.message ||
-          data.choices?.[0]?.message?.content;
+        data.message ||
+        data.response?.message ||
+        data.choices?.[0]?.message?.content;
 
       setChatLog((prev) => [
         ...prev.slice(0, -1),
@@ -139,47 +161,47 @@ export default function OrderChat({
   };
 
   return (
-      <div>
-        <div className="chat-box" ref={chatBoxRef}>
-          {chatLog.map((msg, i) => (
-              <div
-                  key={i}
-                  className={msg.role === "user" ? "chat-row user" : "chat-row bot"}
-              >
-                {msg.role === "bot-typing" ? (
-                    <div className="msg-box typing-indicator">
-                      <span></span><span></span><span></span>
-                    </div>
-                ) : (
-                    <div className="msg-box">{msg.content}</div>
-                )}
-              </div>
-          ))}
-        </div>
-
-        <div className="chat-input-container">
-          <input
-              ref={inputRef}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !isBotTyping && message.trim()) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder="Type your order..."
-              className="chat-input"
-              aria-busy={isBotTyping}
-          />
-          <button
-              onClick={handleSend}
-              className={`chat-send-btn ${isBotTyping ? "disabled-btn" : ""}`}
-              disabled={isBotTyping || !message.trim()}
+    <div>
+      <div className="chat-box" ref={chatBoxRef}>
+        {chatLog.map((msg, i) => (
+          <div
+            key={i}
+            className={msg.role === "user" ? "chat-row user" : "chat-row bot"}
           >
-            Send
-          </button>
-        </div>
+            {msg.role === "bot-typing" ? (
+              <div className="msg-box typing-indicator">
+                <span></span><span></span><span></span>
+              </div>
+            ) : (
+              <div className="msg-box">{msg.content}</div>
+            )}
+          </div>
+        ))}
       </div>
+
+      <div className="chat-input-container">
+        <input
+          ref={inputRef}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !isBotTyping && message.trim()) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          placeholder="Type your order..."
+          className="chat-input"
+          aria-busy={isBotTyping}
+        />
+        <button
+          onClick={handleSend}
+          className={`chat-send-btn ${isBotTyping ? "disabled-btn" : ""}`}
+          disabled={isBotTyping || !message.trim()}
+        >
+          Send
+        </button>
+      </div>
+    </div>
   );
 }

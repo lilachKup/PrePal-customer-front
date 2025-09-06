@@ -14,13 +14,18 @@ const poolData = {
 
 const userPool = new CognitoUserPool(poolData);
 
-const TopBar = ({onNewChat, onProfileSaved}) => {
+const TopBar = ({ onNewChat, onProfileSaved }) => {
 
   const [showProfile, setShowProfile] = useState(false);
 
   const handleLogout = () => {
     // 1. מחיקת מידע מה־localStorage
     localStorage.removeItem("pp_user");
+    localStorage.removeItem("pp_chat_id");
+    localStorage.removeItem("pp_order_items");
+    Object.keys(localStorage)
+      .filter(k => k.startsWith("pp_chat_log_"))
+      .forEach(k => localStorage.removeItem(k));
     sessionStorage.clear();
 
 
@@ -48,7 +53,7 @@ const TopBar = ({onNewChat, onProfileSaved}) => {
       <div className="actions">
         <button onClick={handleLogout}>Logout</button>
         <button onClick={() => setShowProfile(true)}>Profile</button>
-        <button onClick={() => onNewChat()}>?new chat?</button>
+        <button onClick={() => onNewChat()}>new chat</button>
 
         <ProfileModal
           open={showProfile}
