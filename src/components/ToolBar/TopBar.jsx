@@ -44,7 +44,8 @@ const TopBar = () => {
       <div className="brand">
         <h2 className="logo">PrePal</h2>
         <img src={prepal_logo} alt="PrePal Logo" className="logo-image" />
-      </div>      <div className="actions">
+      </div>
+      <div className="actions">
         <button onClick={handleLogout}>Logout</button>
         <button onClick={() => setShowProfile(true)}>Profile</button>
         <button onClick={() => alert("Order Location pressed")}>?new chat?</button>
