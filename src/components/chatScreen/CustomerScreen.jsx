@@ -1,5 +1,5 @@
 // src/components/chatScreen/CustomerScreen.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, {useState, useEffect, useRef} from "react";
 import OrderChat from "./OrderChat";
 import CurrentOrder from "./CurrentOrder";
 import "./CustomerScreen.css";
@@ -17,7 +17,7 @@ import {
 // Parse "City, Street, Number" into parts
 function parseAddress3(s = "") {
     const parts = String(s).split(",").map(p => p.trim()).filter(Boolean);
-    return { city: parts[0] || "", street: parts[1] || "", apt: parts[2] || "" };
+    return {city: parts[0] || "", street: parts[1] || "", apt: parts[2] || ""};
 }
 
 // Normalize yes/no
@@ -39,13 +39,57 @@ export default function CustomerScreen() {
     const [olderOrderItems, setOlderOrderItems] = useState([]);
     const [activeOrders, setActiveOrders] = useState([]);
     const chatPanelRef = useRef(null);
-    const [chatPrefill, setChatPrefill] = useState(""); // text to prefill the chat input
+    const [chatPrefill, setChatPrefill] = useState("");
+    const [chatKey, setChatKey] = useState(1);
+    const [startingChatId, setStartingChatId] = useState("");
+    const [newChat, setNewChat] = useState(true);
+    const handleProfileSaved = (u) => {
+        setCustomerAddressOrder(u?.address || null); // הכתובת החדשה
+        setCoords(null);                              // נכריח ולידציה מחדש אם צריך
+    };
 
-    // When clicking a previous order: prefill chat only (do NOT push to Current Order)
+    const startNewChat = async (addrOverride) => {
+        try {
+            // clear order
+            setOrderItems([]);
+            setOrderSent(false);
+            setStoreId(null);
+
+            // clear local chat
+            localStorage.removeItem("pp_chat_id");
+            setChatPrefill("");
+
+            // ⬅️ משתמשים קודם כל בכתובת שהועברה מבחוץ (addrOverride),
+            // ואם אין – בכתובת המעודכנת ב-state, ואם גם אין – בכתובת מה־localStorage.
+            const addressToUse = addrOverride ?? customerAddressOrder ?? customer_address ?? "";
+
+            const res = await fetch(
+                `https://zukr2k1std.execute-api.us-east-1.amazonaws.com/dev/client/createchat?client_id=${customer_id}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ address: addressToUse }),
+                }
+            );
+
+            const json = await res.json();
+            const newId = json?.chat_id || "";
+            if (newId) {
+                localStorage.setItem("pp_chat_id", newId);
+                setStartingChatId(newId);
+            } else {
+                setStartingChatId("");
+            }
+
+            setChatKey(prev => prev + 1); // force re-mount
+            chatPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (err) {
+            console.error("Start new chat failed:", err);
+        }
+    };
+
     const loadOrderToChat = (arg) => {
-        // Support both signatures:
-        // 1) onSelectOrder(order)
-        // 2) onSelectOrder({ order, chatText })
+
         const order = Array.isArray(arg?.items) ? arg : arg?.order;
         const explicitText = arg?.chatText;
 
@@ -57,7 +101,7 @@ export default function CustomerScreen() {
                     return `${name} x ${qty || 1}`;
                 }
                 const name = String(it?.name ?? it?.product ?? "item");
-                const qty  = Number(it?.quantity ?? it?.qty ?? 1);
+                const qty = Number(it?.quantity ?? it?.qty ?? 1);
                 return `${name} x ${qty}`;
             });
             line = parts.join(", ");
@@ -65,7 +109,7 @@ export default function CustomerScreen() {
 
         setChatPrefill(line ? `Please add: ${line}` : "");
         // Do NOT setOrderItems here – user will send to the bot first
-        chatPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        chatPanelRef.current?.scrollIntoView({behavior: "smooth", block: "start"});
     };
 
     // Session guard
@@ -92,8 +136,11 @@ export default function CustomerScreen() {
 
     // Current user (after guard)
     const user = (() => {
-        try { return JSON.parse(localStorage.getItem("pp_user") || "null"); }
-        catch { return null; }
+        try {
+            return JSON.parse(localStorage.getItem("pp_user") || "null");
+        } catch {
+            return null;
+        }
     })();
 
     const customer_id = user?.sub;
@@ -105,52 +152,55 @@ export default function CustomerScreen() {
     useEffect(() => {
         if (!customer_address) return;
         (async () => {
-            let initial = prompt("Use your saved signup address? (yes/no)");
-            let yn = toYesNo(initial);
-            if (!yn) yn = "yes";
+            if (newChat) {
+                setNewChat(false);
+                let initial = prompt("Use your saved signup address? (yes/no)");
+                let yn = toYesNo(initial);
+                if (!yn) yn = "yes";
 
-            if (yn === "yes") {
-                setCustomerAddressOrder(customer_address);
-                setCoords(null);
-                return;
-            }
-
-            // Ask until valid address in Israel or user cancels to saved address
-            while (true) {
-                const city = prompt("Enter city (required) or type 'cancel' to use saved address:");
-                if (city === null || String(city).trim().toLowerCase() === "cancel") {
+                if (yn === "yes") {
                     setCustomerAddressOrder(customer_address);
                     setCoords(null);
-                    break;
+                    return;
                 }
 
-                const street = prompt("Enter street name (e.g., Herzl). Type 'cancel' to use saved address:");
-                if (street === null || String(street).trim().toLowerCase() === "cancel") {
-                    setCustomerAddressOrder(customer_address);
-                    setCoords(null);
-                    break;
-                }
+                // Ask until valid address in Israel or user cancels to saved address
+                while (true) {
+                    const city = prompt("Enter city (required) or type 'cancel' to use saved address:");
+                    if (city === null || String(city).trim().toLowerCase() === "cancel") {
+                        setCustomerAddressOrder(customer_address);
+                        setCoords(null);
+                        break;
+                    }
 
-                const number = prompt("Enter house number. Type 'cancel' to use saved address:");
-                if (number === null || String(number).trim().toLowerCase() === "cancel") {
-                    setCustomerAddressOrder(customer_address);
-                    setCoords(null);
-                    break;
-                }
+                    const street = prompt("Enter street name (e.g., Herzl). Type 'cancel' to use saved address:");
+                    if (street === null || String(street).trim().toLowerCase() === "cancel") {
+                        setCustomerAddressOrder(customer_address);
+                        setCoords(null);
+                        break;
+                    }
 
-                const addressStr = formatAddress({ city, street: `${street} ${number}`, apt: "" });
+                    const number = prompt("Enter house number. Type 'cancel' to use saved address:");
+                    if (number === null || String(number).trim().toLowerCase() === "cancel") {
+                        setCustomerAddressOrder(customer_address);
+                        setCoords(null);
+                        break;
+                    }
 
-                try {
-                    const { coords: c } = await validateILAddress({
-                        city,
-                        street: `${street} ${number}`,
-                        apt: "",
-                    });
-                    setCustomerAddressOrder(addressStr);
-                    setCoords(c);
-                    break;
-                } catch (err) {
-                    alert(geoErrorToMessage(err));
+                    const addressStr = formatAddress({city, street: `${street} ${number}`, apt: ""});
+
+                    try {
+                        const {coords: c} = await validateILAddress({
+                            city,
+                            street: `${street} ${number}`,
+                            apt: "",
+                        });
+                        setCustomerAddressOrder(addressStr);
+                        setCoords(c);
+                        break;
+                    } catch (err) {
+                        alert(geoErrorToMessage(err));
+                    }
                 }
             }
         })();
@@ -163,7 +213,7 @@ export default function CustomerScreen() {
             try {
                 const oldestRes = await fetch(
                     `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/getOldestsOrders/${customer_id}`,
-                    { method: "GET", headers: { "Content-Type": "application/json" } }
+                    {method: "GET", headers: {"Content-Type": "application/json"}}
                 );
                 const oldestJson = await oldestRes.json();
                 const oldestOrdersArr = Array.isArray(oldestJson?.orders) ? oldestJson.orders : [];
@@ -171,7 +221,7 @@ export default function CustomerScreen() {
                     items: (order.items || []).map(it => {
                         if (typeof it === "string") {
                             const [name, quantity] = it.split(":").map(s => s.trim());
-                            return { name, quantity: Number.parseInt(quantity || "1", 10) || 1 };
+                            return {name, quantity: Number.parseInt(quantity || "1", 10) || 1};
                         }
                         if (it && typeof it === "object") {
                             return {
@@ -179,14 +229,14 @@ export default function CustomerScreen() {
                                 quantity: Number(it.quantity ?? it.qty ?? 1),
                             };
                         }
-                        return { name: String(it), quantity: 1 };
+                        return {name: String(it), quantity: 1};
                     }),
                 }));
                 setOlderOrderItems(parsedOldest);
 
                 const activeRes = await fetch(
                     `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/activeOrders/${customer_id}`,
-                    { method: "GET", headers: { "Content-Type": "application/json" } }
+                    {method: "GET", headers: {"Content-Type": "application/json"}}
                 );
                 const activeJson = await activeRes.json();
                 setActiveOrders(Array.isArray(activeJson?.orders) ? activeJson.orders : []);
@@ -220,7 +270,7 @@ export default function CustomerScreen() {
         if (!coordsToUse) {
             const parsed = parseAddress3(customerAddressOrder);
             try {
-                const { coords: c } = await validateILAddress({
+                const {coords: c} = await validateILAddress({
                     city: parsed.city,
                     street: parsed.street,
                     apt: parsed.apt,
@@ -249,7 +299,7 @@ export default function CustomerScreen() {
                 "https://yv6baxe2i0.execute-api.us-east-1.amazonaws.com/dev/addOrderToStore",
                 {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {"Content-Type": "application/json"},
                     body: JSON.stringify(orderData),
                 }
             );
@@ -267,6 +317,8 @@ export default function CustomerScreen() {
                 onLogin={() => console.log("Login clicked")}
                 onLogout={() => console.log("Logout clicked")}
                 onAddLocation={() => console.log("Add Location clicked")}
+                onNewChat={startNewChat}
+                onProfileSaved={handleProfileSaved}
             />
 
             <div className="customer-layout">
@@ -275,24 +327,26 @@ export default function CustomerScreen() {
                         orders={olderOrderItems}
                         onSelectOrder={loadOrderToChat}
                     />
-                    <ActiveOrders orders={activeOrders} />
+                    <ActiveOrders orders={activeOrders}/>
                 </div>
 
                 {/* Chat Area */}
                 <div className="chat-panel" ref={chatPanelRef}>
                     <h2 className="section-title">Chat with PrepPal</h2>
                     <OrderChat
+                        key={chatKey}
                         onNewItem={handleNewItems}
                         customer_id={customer_id}
                         customer_address={customerAddressOrder}
-                        prefillText={chatPrefill}   // << prefill the input, no auto-send
+                        prefillText={chatPrefill}
+                        startingChatId={startingChatId}
                     />
                 </div>
 
                 {/* Order Area */}
                 <div className="order-panel">
                     <h2 className="section-title">Current Order</h2>
-                    <CurrentOrder items={orderItems} />
+                    <CurrentOrder items={orderItems}/>
                     <button
                         onClick={sendOrder}
                         className="send-order-btn"

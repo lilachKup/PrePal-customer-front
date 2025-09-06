@@ -1,7 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./OrderChat.css";
 
-export default function OrderChat({ onNewItem, customer_id, customer_address, prefillText }) {
+export default function OrderChat({
+                                    onNewItem,
+                                    customer_id,
+                                    customer_address,
+                                    prefillText,
+                                    startingChatId,              // NEW: מאפשר להתחיל עם chat_id שמגיע מהורה
+                                  }) {
   const [message, setMessage] = useState("");
   const [chatLog, setChatLog] = useState([]);
   const [isBotTyping, setIsBotTyping] = useState(false);
@@ -12,7 +18,26 @@ export default function OrderChat({ onNewItem, customer_id, customer_address, pr
   const inputRef = useRef(null);
   const lastPrefillRef = useRef("");
 
-  // Prefill the input (do not auto send)
+  // NEW: אתחול chatId בתחילת חיי הקומפוננטה – קודם מ־startingChatId, אחרת מה-localStorage
+  useEffect(() => {
+    if (startingChatId) {
+      setChatId(startingChatId);
+      setIsNewChat(false);
+      setChatLog([]);
+      return;
+    }
+    const saved = localStorage.getItem("pp_chat_id");
+    if (saved) {
+      setChatId(saved);
+      setIsNewChat(false);
+    } else {
+      setChatId("");
+      setIsNewChat(true);
+      setChatLog([]); // התחלה נקייה
+    }
+  }, [startingChatId]);
+
+  // Prefill input (do not auto send)
   useEffect(() => {
     const txt = String(prefillText || "").trim();
     if (txt && txt !== lastPrefillRef.current) {
@@ -56,9 +81,16 @@ export default function OrderChat({ onNewItem, customer_id, customer_address, pr
             }
         );
         const initData = await initRes.json();
+
+        if (!initRes.ok || !initData?.chat_id) {
+          throw new Error("Failed to create chat");
+        }
+
         currentChatId = initData.chat_id;
         setChatId(currentChatId);
         setIsNewChat(false);
+
+        localStorage.setItem("pp_chat_id", currentChatId);  // NEW: לשמור לזהות שיחה
       }
 
       const res = await fetch(

@@ -175,6 +175,7 @@ export default function ProfileModal({ open, onClose, onSaved,onNewChat }) {
       });
     } catch (err) {
       setStatus(geoErrorToMessage(err));
+      /////
       return;
     }
 
