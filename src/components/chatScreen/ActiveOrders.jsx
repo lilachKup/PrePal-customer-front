@@ -3,7 +3,6 @@ import "./ActiveOrders.css";
 
 function normalizeItem(it) {
   if (typeof it === "string") {
-    // תומך ב"עגבניה: 2" או "עגבניה × 2"
     const m = it.match(/^(.+?)[\s:×x]+(\d+)\s*$/);
     if (m) return { name: m[1].trim(), quantity: Number(m[2]) || 1 };
     return { name: it, quantity: 1 };

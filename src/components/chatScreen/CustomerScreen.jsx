@@ -39,13 +39,50 @@ export default function CustomerScreen() {
     const [olderOrderItems, setOlderOrderItems] = useState([]);
     const [activeOrders, setActiveOrders] = useState([]);
     const chatPanelRef = useRef(null);
-    const [chatPrefill, setChatPrefill] = useState(""); // text to prefill the chat input
+    const [chatPrefill, setChatPrefill] = useState("");
+    const [chatKey, setChatKey] = useState(1);
+    const [startingChatId, setStartingChatId] = useState("");
+    const [newChat, setNewChat] = useState(true);
 
-    // When clicking a previous order: prefill chat only (do NOT push to Current Order)
+    const startNewChat = async () => {
+        try {
+            //clear order
+            setOrderItems([]);
+            setOrderSent(false);
+            setStoreId(null);
+
+            //clear local chat
+            localStorage.removeItem("pp_chat_id");
+            setChatPrefill("");
+
+            const res = await fetch(
+                `https://zukr2k1std.execute-api.us-east-1.amazonaws.com/dev/client/createchat?client_id=${customer_id}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ address: customer_address || "" }),
+                }
+            );
+            const json = await res.json();
+            const newId = json?.chat_id || "";
+            if (newId) {
+                localStorage.setItem("pp_chat_id", newId);
+                setStartingChatId(newId);
+            }
+            else
+            {
+                setStartingChatId("");
+            }
+            setChatKey(prev => prev + 1); //force re-mount
+            chatPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        catch (err) {
+            console.error("Start new chat failed:", err);
+        }
+    }
+
     const loadOrderToChat = (arg) => {
-        // Support both signatures:
-        // 1) onSelectOrder(order)
-        // 2) onSelectOrder({ order, chatText })
+
         const order = Array.isArray(arg?.items) ? arg : arg?.order;
         const explicitText = arg?.chatText;
 
@@ -105,52 +142,55 @@ export default function CustomerScreen() {
     useEffect(() => {
         if (!customer_address) return;
         (async () => {
-            let initial = prompt("Use your saved signup address? (yes/no)");
-            let yn = toYesNo(initial);
-            if (!yn) yn = "yes";
+            if(newChat) {
+                setNewChat(false);
+                let initial = prompt("Use your saved signup address? (yes/no)");
+                let yn = toYesNo(initial);
+                if (!yn) yn = "yes";
 
-            if (yn === "yes") {
-                setCustomerAddressOrder(customer_address);
-                setCoords(null);
-                return;
-            }
-
-            // Ask until valid address in Israel or user cancels to saved address
-            while (true) {
-                const city = prompt("Enter city (required) or type 'cancel' to use saved address:");
-                if (city === null || String(city).trim().toLowerCase() === "cancel") {
+                if (yn === "yes") {
                     setCustomerAddressOrder(customer_address);
                     setCoords(null);
-                    break;
+                    return;
                 }
 
-                const street = prompt("Enter street name (e.g., Herzl). Type 'cancel' to use saved address:");
-                if (street === null || String(street).trim().toLowerCase() === "cancel") {
-                    setCustomerAddressOrder(customer_address);
-                    setCoords(null);
-                    break;
-                }
+                // Ask until valid address in Israel or user cancels to saved address
+                while (true) {
+                    const city = prompt("Enter city (required) or type 'cancel' to use saved address:");
+                    if (city === null || String(city).trim().toLowerCase() === "cancel") {
+                        setCustomerAddressOrder(customer_address);
+                        setCoords(null);
+                        break;
+                    }
 
-                const number = prompt("Enter house number. Type 'cancel' to use saved address:");
-                if (number === null || String(number).trim().toLowerCase() === "cancel") {
-                    setCustomerAddressOrder(customer_address);
-                    setCoords(null);
-                    break;
-                }
+                    const street = prompt("Enter street name (e.g., Herzl). Type 'cancel' to use saved address:");
+                    if (street === null || String(street).trim().toLowerCase() === "cancel") {
+                        setCustomerAddressOrder(customer_address);
+                        setCoords(null);
+                        break;
+                    }
 
-                const addressStr = formatAddress({ city, street: `${street} ${number}`, apt: "" });
+                    const number = prompt("Enter house number. Type 'cancel' to use saved address:");
+                    if (number === null || String(number).trim().toLowerCase() === "cancel") {
+                        setCustomerAddressOrder(customer_address);
+                        setCoords(null);
+                        break;
+                    }
 
-                try {
-                    const { coords: c } = await validateILAddress({
-                        city,
-                        street: `${street} ${number}`,
-                        apt: "",
-                    });
-                    setCustomerAddressOrder(addressStr);
-                    setCoords(c);
-                    break;
-                } catch (err) {
-                    alert(geoErrorToMessage(err));
+                    const addressStr = formatAddress({city, street: `${street} ${number}`, apt: ""});
+
+                    try {
+                        const {coords: c} = await validateILAddress({
+                            city,
+                            street: `${street} ${number}`,
+                            apt: "",
+                        });
+                        setCustomerAddressOrder(addressStr);
+                        setCoords(c);
+                        break;
+                    } catch (err) {
+                        alert(geoErrorToMessage(err));
+                    }
                 }
             }
         })();
@@ -267,6 +307,7 @@ export default function CustomerScreen() {
                 onLogin={() => console.log("Login clicked")}
                 onLogout={() => console.log("Logout clicked")}
                 onAddLocation={() => console.log("Add Location clicked")}
+                onNewChat={startNewChat}
             />
 
             <div className="customer-layout">
@@ -282,10 +323,12 @@ export default function CustomerScreen() {
                 <div className="chat-panel" ref={chatPanelRef}>
                     <h2 className="section-title">Chat with PrepPal</h2>
                     <OrderChat
+                        key={chatKey}
                         onNewItem={handleNewItems}
                         customer_id={customer_id}
                         customer_address={customerAddressOrder}
-                        prefillText={chatPrefill}   // << prefill the input, no auto-send
+                        prefillText={chatPrefill}
+                        startingChatId={startingChatId}
                     />
                 </div>
 

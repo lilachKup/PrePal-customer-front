@@ -14,7 +14,7 @@ const poolData = {
 
 const userPool = new CognitoUserPool(poolData);
 
-const TopBar = () => {
+const TopBar = ({onNewChat}) => {
 
   const [showProfile, setShowProfile] = useState(false);
 
@@ -23,13 +23,13 @@ const TopBar = () => {
     localStorage.removeItem("pp_user");
     sessionStorage.clear();
 
-    // 2. יצירת משתמש נוכחי (אם יש) ו־signOut
+
     const user = userPool.getCurrentUser();
     if (user) {
-      user.signOut(); // מנתק מהסשן המקומי
+      user.signOut();
     }
 
-    // 3. הפניה חזרה לדף התחברות
+
     window.location.href = "/login";
   };
 
@@ -47,13 +47,14 @@ const TopBar = () => {
       </div>      <div className="actions">
         <button onClick={handleLogout}>Logout</button>
         <button onClick={() => setShowProfile(true)}>Profile</button>
-        <button onClick={() => alert("Order Location pressed")}>?new chat?</button>
+        <button onClick={onNewChat}>?new chat?</button>
 
         <ProfileModal
           open={showProfile}
           onClose={() => setShowProfile(false)}
           onSaved={() => {
           }}
+          onNewChat={onNewChat}
         />
       </div>
     </div>

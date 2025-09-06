@@ -22,7 +22,8 @@ const poolData = {
 const userPool = new CognitoUserPool(poolData);
 
 // Wrap Cognito address update with a Promise
-function updateAddressInCognito(address) {
+function updateAddressInCognito(address)
+{
   const user = userPool.getCurrentUser();
   return new Promise((resolve) => {
     if (!user) {
@@ -92,7 +93,7 @@ function saveUserToStorage(partial) {
 }
 
 // ---- component ----
-export default function ProfileModal({ open, onClose, onSaved }) {
+export default function ProfileModal({ open, onClose, onSaved,onNewChat }) {
   const initial = useMemo(() => loadUserFromStorage(), [open]);
   const [form, setForm] = useState(
       initial || { sub: "", name: "", email: "", address: "" }
@@ -156,14 +157,12 @@ export default function ProfileModal({ open, onClose, onSaved }) {
   const onSave = async (e) => {
     e.preventDefault();
 
-    // Build/normalize address string
     const addressStr = formatAddress({
       city,
       street: `${street} ${number}`.trim(),
       apt: "",
     });
 
-    // 1) Validate address is in Israel
     setStatus("Validating address...");
     try {
       await validateILAddress({
@@ -172,11 +171,14 @@ export default function ProfileModal({ open, onClose, onSaved }) {
         apt: "",
       });
     } catch (err) {
-      setStatus(geoErrorToMessage(err)); // keep inputs as-is for correction
+      setStatus(geoErrorToMessage(err));
       return;
     }
 
-    // 2) Save to local storage (so the app picks it up immediately)
+    // נחשב פעם אחת אם הכתובת השתנתה (על סמך מה שהיה בתחילת המודאל)
+    const addressChanged = (initial?.address || "") !== addressStr;
+
+    // שמירה ל-localStorage
     const localOk = saveUserToStorage({
       phone_number: form.phone_number,
       name: form.name,
@@ -184,14 +186,22 @@ export default function ProfileModal({ open, onClose, onSaved }) {
       address: addressStr,
     });
 
-    // 3) Save to Cognito profile
     setStatus("Saving...");
     const cognitoOk = await updateAddressInCognito(addressStr);
 
-    // 4) Finish
+    // אם נשמר בהצלחה ובאמת השתנתה הכתובת — מאפסים צ'אט
+    if (addressChanged && localOk && cognitoOk) {
+      onNewChat?.();
+    } else {
+      console.log(addressChanged ? "Save failed, skip reset" : "Address did not change");
+    }
+
     const finalStatus = localOk && cognitoOk ? "Saved ✅" : "Partial save ⚠️";
     setStatus(finalStatus);
-    if (localOk && cognitoOk) onSaved?.({ ...form, address: addressStr });
+    if (localOk && cognitoOk) {
+      setForm(f => ({ ...f, address: addressStr })); // רענון מיידי ל־UI
+      onSaved?.({ ...form, address: addressStr });
+    }
     setTimeout(() => setStatus(""), 1500);
   };
 
