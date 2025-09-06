@@ -14,7 +14,7 @@ const poolData = {
 
 const userPool = new CognitoUserPool(poolData);
 
-const TopBar = ({onNewChat}) => {
+const TopBar = ({onNewChat, onProfileSaved}) => {
 
   const [showProfile, setShowProfile] = useState(false);
 
@@ -47,13 +47,12 @@ const TopBar = ({onNewChat}) => {
       </div>      <div className="actions">
         <button onClick={handleLogout}>Logout</button>
         <button onClick={() => setShowProfile(true)}>Profile</button>
-        <button onClick={onNewChat}>?new chat?</button>
+        <button onClick={() => onNewChat()}>?new chat?</button>
 
         <ProfileModal
           open={showProfile}
           onClose={() => setShowProfile(false)}
-          onSaved={() => {
-          }}
+          onSaved={onProfileSaved}
           onNewChat={onNewChat}
         />
       </div>

@@ -73,7 +73,7 @@ function loadUserFromStorage() {
       phone_number: payload?.phone_number || u.phone_number || "",
       name: payload?.name || u.name || "",
       email: payload?.email || u.email || "",
-      address: payload?.address || u.address || "",
+      address: u.address || payload?.address || ""
     };
   } catch {
     return null;
@@ -157,6 +157,9 @@ export default function ProfileModal({ open, onClose, onSaved,onNewChat }) {
   const onSave = async (e) => {
     e.preventDefault();
 
+    // נרמל מחרוזות להשוואה הוגנת (רווחים מיותרים וכו')
+    const normalize = (s) => (s || "").replace(/\s+/g, " ").trim();
+
     const addressStr = formatAddress({
       city,
       street: `${street} ${number}`.trim(),
@@ -175,8 +178,8 @@ export default function ProfileModal({ open, onClose, onSaved,onNewChat }) {
       return;
     }
 
-    // נחשב פעם אחת אם הכתובת השתנתה (על סמך מה שהיה בתחילת המודאל)
-    const addressChanged = (initial?.address || "") !== addressStr;
+    // האם הכתובת באמת השתנתה לעומת מה שהיה כשנפתח המודל
+    const addressChanged = normalize(initial?.address) !== normalize(addressStr);
 
     // שמירה ל-localStorage
     const localOk = saveUserToStorage({
@@ -188,20 +191,24 @@ export default function ProfileModal({ open, onClose, onSaved,onNewChat }) {
 
     setStatus("Saving...");
     const cognitoOk = await updateAddressInCognito(addressStr);
+    const ok = localOk && cognitoOk;
 
-    // אם נשמר בהצלחה ובאמת השתנתה הכתובת — מאפסים צ'אט
-    if (addressChanged && localOk && cognitoOk) {
-      onNewChat?.();
+    if (ok) {
+      // עדכון ההורה פעם אחת בלבד
+      onSaved?.({ ...form, address: addressStr });
+
+      // אם באמת השתנתה הכתובת — לפתוח צ'אט חדש עם הכתובת החדשה
+      if (addressChanged) {
+        onNewChat?.(addressStr);
+      }
+
+      // רענון המודל עצמו
+      setForm((f) => ({ ...f, address: addressStr }));
     } else {
       console.log(addressChanged ? "Save failed, skip reset" : "Address did not change");
     }
 
-    const finalStatus = localOk && cognitoOk ? "Saved ✅" : "Partial save ⚠️";
-    setStatus(finalStatus);
-    if (localOk && cognitoOk) {
-      setForm(f => ({ ...f, address: addressStr })); // רענון מיידי ל־UI
-      onSaved?.({ ...form, address: addressStr });
-    }
+    setStatus(ok ? "Saved ✅" : "Partial save ⚠️");
     setTimeout(() => setStatus(""), 1500);
   };
 
