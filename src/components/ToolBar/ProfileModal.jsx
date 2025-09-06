@@ -22,7 +22,8 @@ const poolData = {
 const userPool = new CognitoUserPool(poolData);
 
 // Wrap Cognito address update with a Promise
-function updateAddressInCognito(address) {
+function updateAddressInCognito(address)
+{
   const user = userPool.getCurrentUser();
   return new Promise((resolve) => {
     if (!user) {
@@ -35,39 +36,20 @@ function updateAddressInCognito(address) {
         return resolve(false);
       }
       user.updateAttributes(
-        [{ Name: "address", Value: address }],
-        (err) => {
-          if (err) {
-            console.error("❌ Failed to update address in Cognito:", err);
-            resolve(false);
-          } else {
-            console.log("✅ Address updated in Cognito");
-            resolve(true);
+          [{ Name: "address", Value: address }],
+          (err) => {
+            if (err) {
+              console.error("❌ Failed to update address in Cognito:", err);
+              resolve(false);
+            } else {
+              console.log("✅ Address updated in Cognito");
+              resolve(true);
+            }
           }
-        }
       );
     });
   });
 }
-
-function reloadCognitoUserData() {
-  const user = userPool.getCurrentUser();
-  return new Promise((resolve) => {
-    if (!user) return resolve(null);
-    user.getSession((err, session) => {
-      if (err || !session?.isValid()) return resolve(null);
-      user.getUserAttributes((err, attributes) => {
-        if (err) return resolve(null);
-        const result = {};
-        for (const attr of attributes) {
-          result[attr.getName()] = attr.getValue();
-        }
-        resolve(result);
-      });
-    });
-  });
-}
-
 
 // ---- helpers ----
 function decodeJwt(token) {
@@ -91,7 +73,7 @@ function loadUserFromStorage() {
       phone_number: payload?.phone_number || u.phone_number || "",
       name: payload?.name || u.name || "",
       email: payload?.email || u.email || "",
-      address: payload?.address || u.address || "",
+      address: u.address || payload?.address || ""
     };
   } catch {
     return null;
@@ -111,10 +93,10 @@ function saveUserToStorage(partial) {
 }
 
 // ---- component ----
-export default function ProfileModal({ open, onClose, onSaved }) {
+export default function ProfileModal({ open, onClose, onSaved,onNewChat }) {
   const initial = useMemo(() => loadUserFromStorage(), [open]);
   const [form, setForm] = useState(
-    initial || { sub: "", name: "", email: "", address: "" }
+      initial || { sub: "", name: "", email: "", address: "" }
   );
 
   const [status, setStatus] = useState("");
@@ -175,14 +157,15 @@ export default function ProfileModal({ open, onClose, onSaved }) {
   const onSave = async (e) => {
     e.preventDefault();
 
-    // Build/normalize address string
+    // נרמל מחרוזות להשוואה הוגנת (רווחים מיותרים וכו')
+    const normalize = (s) => (s || "").replace(/\s+/g, " ").trim();
+
     const addressStr = formatAddress({
       city,
       street: `${street} ${number}`.trim(),
       apt: "",
     });
 
-    // 1) Validate address is in Israel
     setStatus("Validating address...");
     try {
       await validateILAddress({
@@ -191,11 +174,14 @@ export default function ProfileModal({ open, onClose, onSaved }) {
         apt: "",
       });
     } catch (err) {
-      setStatus(geoErrorToMessage(err)); // keep inputs as-is for correction
+      setStatus(geoErrorToMessage(err));
       return;
     }
 
-    // 2) Save to local storage (so the app picks it up immediately)
+    // האם הכתובת באמת השתנתה לעומת מה שהיה כשנפתח המודל
+    const addressChanged = normalize(initial?.address) !== normalize(addressStr);
+
+    // שמירה ל-localStorage
     const localOk = saveUserToStorage({
       phone_number: form.phone_number,
       name: form.name,
@@ -203,118 +189,120 @@ export default function ProfileModal({ open, onClose, onSaved }) {
       address: addressStr,
     });
 
-    // 3) Save to Cognito profile
     setStatus("Saving...");
     const cognitoOk = await updateAddressInCognito(addressStr);
+    const ok = localOk && cognitoOk;
 
-    const freshData = await reloadCognitoUserData();
-    if (freshData) {
-      saveUserToStorage({
-        phone_number: freshData.phone_number || form.phone_number,
-        name: freshData.name || form.name,
-        email: freshData.email || form.email,
-        address: freshData.address || addressStr,
-      });
+    if (ok) {
+      // עדכון ההורה פעם אחת בלבד
+      onSaved?.({ ...form, address: addressStr });
 
-      // 4) Finish
-      const finalStatus = localOk && cognitoOk ? "Saved ✅" : "Partial save ⚠️";
-      setStatus(finalStatus);
-      if (localOk && cognitoOk) onSaved?.({ ...form, address: addressStr });
-      setTimeout(() => setStatus(""), 1500);
+      // אם באמת השתנתה הכתובת — לפתוח צ'אט חדש עם הכתובת החדשה
+      if (addressChanged) {
+        onNewChat?.(addressStr);
+      }
+
+      // רענון המודל עצמו
+      setForm((f) => ({ ...f, address: addressStr }));
+    } else {
+      console.log(addressChanged ? "Save failed, skip reset" : "Address did not change");
     }
+
+    setStatus(ok ? "Saved ✅" : "Partial save ⚠️");
+    setTimeout(() => setStatus(""), 1500);
   };
 
   const content = (
-    <div className="pp-modal-backdrop" onClick={onClose}>
-      <div
-        className="pp-modal-panel"
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="pp-modal-header">
-          <h2>Profile</h2>
-          <button className="pp-modal-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
-
-        {!initial ? (
-          <div className="pp-modal-body">
-            <p>You are not logged in.</p>
+      <div className="pp-modal-backdrop" onClick={onClose}>
+        <div
+            className="pp-modal-panel"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+        >
+          <div className="pp-modal-header">
+            <h2>Profile</h2>
+            <button className="pp-modal-close" onClick={onClose} aria-label="Close">
+              ×
+            </button>
           </div>
-        ) : (
-          <form onSubmit={onSave} className="pp-modal-body">
-            <label className="pp-field">
-              <span>Name</span>
-              <input name="name" value={form.name} readOnly placeholder="Your name" />
-            </label>
 
-            <label className="pp-field">
-              <span>Phone Number</span>
-              <input
-                name="phone_number"
-                value={form.phone_number}
-                readOnly
-                placeholder="Your phone number"
-              />
-            </label>
+          {!initial ? (
+              <div className="pp-modal-body">
+                <p>You are not logged in.</p>
+              </div>
+          ) : (
+              <form onSubmit={onSave} className="pp-modal-body">
+                <label className="pp-field">
+                  <span>Name</span>
+                  <input name="name" value={form.name} readOnly placeholder="Your name" />
+                </label>
 
-            <label className="pp-field">
-              <span>Email</span>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                readOnly
-                placeholder="name@example.com"
-              />
-            </label>
+                <label className="pp-field">
+                  <span>Phone Number</span>
+                  <input
+                      name="phone_number"
+                      value={form.phone_number}
+                      readOnly
+                      placeholder="Your phone number"
+                  />
+                </label>
 
-            {/* Address row */}
-            <div className="pp-address-row">
-              <label className="pp-field">
-                <span>City</span>
-                <input
-                  name="city"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  required
-                />
-              </label>
+                <label className="pp-field">
+                  <span>Email</span>
+                  <input
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      readOnly
+                      placeholder="name@example.com"
+                  />
+                </label>
 
-              <label className="pp-field">
-                <span>Street</span>
-                <input
-                  name="street"
-                  value={street}
-                  onChange={(e) => setStreet(e.target.value)}
-                />
-              </label>
+                {/* Address row */}
+                <div className="pp-address-row">
+                  <label className="pp-field">
+                    <span>City</span>
+                    <input
+                        name="city"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        required
+                    />
+                  </label>
 
-              <label className="pp-field">
-                <span>Number</span>
-                <input
-                  name="number"
-                  value={number}
-                  onChange={(e) => setNumber(e.target.value)}
-                />
-              </label>
-            </div>
+                  <label className="pp-field">
+                    <span>Street</span>
+                    <input
+                        name="street"
+                        value={street}
+                        onChange={(e) => setStreet(e.target.value)}
+                    />
+                  </label>
 
-            <div className="pp-modal-actions">
-              <button type="submit" className="pp-btn pp-btn-primary">
-                Save
-              </button>
-              <button type="button" className="pp-btn" onClick={onClose}>
-                Close
-              </button>
-              {status && <span className="pp-status">{status}</span>}
-            </div>
-          </form>
-        )}
+                  <label className="pp-field">
+                    <span>Number</span>
+                    <input
+                        name="number"
+                        value={number}
+                        onChange={(e) => setNumber(e.target.value)}
+                    />
+                  </label>
+                </div>
+
+                <div className="pp-modal-actions">
+                  <button type="submit" className="pp-btn pp-btn-primary">
+                    Save
+                  </button>
+                  <button type="button" className="pp-btn" onClick={onClose}>
+                    Close
+                  </button>
+                  {status && <span className="pp-status">{status}</span>}
+                </div>
+              </form>
+          )}
+        </div>
       </div>
-    </div>
   );
 
   return createPortal(content, document.body);
