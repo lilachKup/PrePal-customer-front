@@ -168,7 +168,7 @@ export default function CustomerScreen() {
     const customer_address = user?.address;
 
     // Ask for delivery address on mount
-    useEffect(() => {
+    /*useEffect(() => {
         if (!customer_address) return;
         (async () => {
             if (newChat) {
@@ -225,6 +225,8 @@ export default function CustomerScreen() {
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [customer_address]);
+
+     */
 
     // Load previous + active orders
     useEffect(() => {
