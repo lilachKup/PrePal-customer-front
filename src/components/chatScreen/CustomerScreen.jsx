@@ -19,14 +19,7 @@ function parseAddress3(s = "") {
     return { city: parts[0] || "", street: parts[1] || "", apt: parts[2] || "" };
 }
 
-// Normalize yes/no
-function toYesNo(str) {
-    if (!str) return null;
-    const v = String(str).trim().toLowerCase();
-    if (["y", "yes"].includes(v)) return "yes";
-    if (["n", "no"].includes(v)) return "no";
-    return null;
-}
+
 
 export default function CustomerScreen() {
     const [orderItems, setOrderItems] = useState([]);
@@ -52,7 +45,9 @@ export default function CustomerScreen() {
             const saved = localStorage.getItem("pp_order_items");
             if (saved) {
                 const items = JSON.parse(saved);
+                console.log(`items:`,items)
                 if (Array.isArray(items)) setOrderItems(items);
+
             }
         } catch { }
     }, []);
@@ -218,12 +213,14 @@ export default function CustomerScreen() {
     // Bot returned items -> now we do update Current Order
     const handleNewItems = (itemsList, store_id) => {
         if (!Array.isArray(itemsList)) return;
+        console.log(`itemsList from bot:`, itemsList);
         const newItems = itemsList.map(item => ({
             name: item.Name,
-            image: item.Image || "https://img.icons8.com/ios-filled/50/cccccc/shopping-cart.png",
+            image: item.image_url || "https://img.icons8.com/ios-filled/50/cccccc/shopping-cart.png",
             quantity: item.Quantity,
             price: parseFloat(item.Price) * parseInt(item.Quantity, 10),
         }));
+        console.log(`newItems:`, newItems);
         setOrderItems(newItems);
         setStoreId(store_id);
     };

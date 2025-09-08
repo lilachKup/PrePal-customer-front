@@ -5,6 +5,7 @@ const placeholderImg = "https://img.icons8.com/ios-filled/50/cccccc/shopping-car
 
 
 const CurrentOrder = ({ items }) => {
+    console.log('CurrentOrder items:', items);
   return (
     <div>
       {items.length === 0 ? (
@@ -17,7 +18,7 @@ const CurrentOrder = ({ items }) => {
               <span className="order-item-quantity"> {item.quantity} </span>
               <span className="order-item-price">₪{(Math.ceil(item.price * 100) / 100).toFixed(2)}</span>
               <img
-                src={item.image_url || placeholderImg}
+                src={item.image || placeholderImg}
                 alt={item.name}
                 className="order-item-img"
               />
