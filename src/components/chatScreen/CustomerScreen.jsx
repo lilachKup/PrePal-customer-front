@@ -201,6 +201,7 @@ export default function CustomerScreen() {
                     { method: "GET", headers: { "Content-Type": "application/json" } }
                 );
                 const activeJson = await activeRes.json();
+                console.log(`activeJson:`, activeJson);
                 setActiveOrders(Array.isArray(activeJson?.orders) ? activeJson.orders : []);
             } catch (e) {
                 console.error("Load orders failed:", e);
@@ -212,15 +213,51 @@ export default function CustomerScreen() {
     const handleNewItems = (itemsList, store_id) => {
         if (!Array.isArray(itemsList)) return;
         console.log(`itemsList from bot:`, itemsList);
-        const newItems = itemsList.map(item => ({
-            name: item.Name,
-            image: item.image_url || "https://img.icons8.com/ios-filled/50/cccccc/shopping-cart.png",
-            quantity: item.Quantity,
-            price: parseFloat(item.Price) * parseInt(item.Quantity, 10),
-        }));
-        console.log(`newItems:`, newItems);
-        setOrderItems(newItems);
-        setStoreId(store_id);
+
+        (async () => {
+            const newItems = await Promise.all(
+                itemsList.map(async (item) => {
+                    const ENDPOINT = "https://oa608utwwh.execute-api.us-east-1.amazonaws.com/dev/getProductImage";
+                    const PLACEHOLDER = "https://img.icons8.com/ios-filled/50/cccccc/shopping-cart.png";
+
+                    const storeId   = item.Store_id || item.store_id || store_id;
+                    const productId = item.Id ?? item.id ?? item.product_id;
+
+                    let imageUrl = PLACEHOLDER;
+                    try {
+                        const res = await fetch(ENDPOINT, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            // שימי לב: אם ה-Lambda שלך מצפה ל-id, שלחי id (כאן).
+                            // אם הוא מצפה ל-product_id, החליפי את המפתח לשם.
+                            body: JSON.stringify({ store_id: storeId, id: productId })
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data?.image_url) imageUrl = data.image_url;
+                        } else {
+                            console.warn("getProductImage failed:", res.status);
+                        }
+                    } catch (e) {
+                        console.warn("getProductImage error:", e);
+                    }
+
+                    const qty = parseInt(item.Quantity, 10) || 0;
+                    const priceNum = parseFloat(item.Price) || 0;
+
+                    return {
+                        name: item.Name,
+                        image: imageUrl,                                   // ← כאן שמנו את התמונה שחזרה מהלמבדה
+                        quantity: qty,
+                        price: +(priceNum * qty).toFixed(2),
+                    };
+                })
+            );
+
+            console.log(`newItems:`, newItems);
+            setOrderItems(newItems);
+            setStoreId(store_id);
+        })();
     };
 
     const sendOrder = async () => {
