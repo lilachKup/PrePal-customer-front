@@ -15,7 +15,7 @@ const CurrentOrder = ({ items }) => {
             <li key={i} className="order-item">
               <span>{item.name}</span>
               <span className="order-item-quantity"> {item.quantity} </span>
-              <span className="order-item-price"> ${item.price} </span>
+              <span className="order-item-price"> ₪{item.price} </span>
               <img
                 src={item.image || placeholderImg}
                 alt={items[0].name}
