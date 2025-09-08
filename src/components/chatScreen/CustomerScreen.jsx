@@ -9,7 +9,6 @@ import ActiveOrders from "./ActiveOrders";
 // Israel-only address validation utils
 import {
     validateILAddress,
-    formatAddress,
     geoErrorToMessage,
 } from "../utils/checkValidAddress";
 
@@ -26,7 +25,6 @@ export default function CustomerScreen() {
     const [orderSent, setOrderSent] = useState(false);
     const [customerAddressOrder, setCustomerAddressOrder] = useState(null);
     const [coords, setCoords] = useState(null); // {lat, lng} when validated
-    const [chatId, setChatId] = useState(null);
     const [storeId, setStoreId] = useState(null);
     const [olderOrderItems, setOlderOrderItems] = useState([]);
     const [activeOrders, setActiveOrders] = useState([]);
@@ -271,6 +269,14 @@ export default function CustomerScreen() {
             );
             await res.json().catch(() => ({}));
             setOrderSent(true);
+            await startNewChat(customerAddressOrder);
+            const activeRes = await fetch(
+                `https://fhuufimc4l.execute-api.us-east-1.amazonaws.com/dev/activeOrders/${customer_id}`,
+                { method: "GET", headers: { "Content-Type": "application/json" } }
+            );
+            const activeJson = await activeRes.json();
+            setActiveOrders(Array.isArray(activeJson?.orders) ? activeJson.orders : []);
+            alert("Order sent successfully!, we open a new chat for you.");
         } catch (err) {
             console.error("Send order failed:", err);
             alert("Failed to send order. Please try again.");
@@ -309,10 +315,9 @@ export default function CustomerScreen() {
                     />
                 </div>
 
-                {/* Order Area */}
                 <div className="order-panel">
                     <h2 className="section-title">Current Order</h2>
-                    <CurrentOrder items={orderItems} />
+                    <CurrentOrder items={orderItems}/>
                     <button
                         onClick={sendOrder}
                         className="send-order-btn"
