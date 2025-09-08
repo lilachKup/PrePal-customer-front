@@ -18,7 +18,11 @@ export default function PreviousOrders({ orders = [], onSelectOrder }) {
 
     return (
         <div className="orders-box previous-orders">
-            <h2 className="section-title">Previous Orders</h2>
+            <h2 className="section-title">
+                Previous Orders
+                <small className="section-hint">Press a previous order to add to cart</small>
+            </h2>
+
 
             {(!orders || orders.length === 0) ? (
                 <p>No previous orders.</p>
