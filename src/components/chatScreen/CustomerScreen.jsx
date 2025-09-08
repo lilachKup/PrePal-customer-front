@@ -228,8 +228,6 @@ export default function CustomerScreen() {
 
      */
 
-
-
     // Load previous + active orders
     useEffect(() => {
         (async () => {
