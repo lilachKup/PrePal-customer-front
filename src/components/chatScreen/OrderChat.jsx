@@ -82,6 +82,9 @@ export default function OrderChat({
   }, [chatLog]);
 
   const handleSend = async () => {
+    console.log(
+      `handleSend: message: ${message}, customer_address: ${customer_address}, customer_id: ${customer_id}, chatId: ${chatId}, isNewChat: ${isNewChat}`
+    );
     if (isBotTyping) return;
     if (!message.trim()) return;
 
@@ -178,6 +181,7 @@ export default function OrderChat({
           </div>
         ))}
       </div>
+
 
       <div className="chat-input-container">
         <input
