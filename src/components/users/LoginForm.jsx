@@ -3,8 +3,8 @@ import { AuthenticationDetails, CognitoUser, CognitoUserPool } from 'amazon-cogn
 import './RegisterForm.css';
 
 const poolData = {
-  UserPoolId: "us-east-1_TpeA6BAZD",
-  ClientId: "56ic185te584076fcsarbqq93m"
+    UserPoolId: "us-east-1_TpeA6BAZD",
+    ClientId: "56ic185te584076fcsarbqq93m"
 };
 
 
@@ -25,6 +25,13 @@ export default function LoginForm() {
 
         user.authenticateUser(auth, {
             onSuccess: (session) => {
+                // נקה את כל ה-localStorage של PrepPal לפני שמכניסים משתמש חדש
+                Object.keys(localStorage)
+                    .filter(k => k.startsWith("pp_"))
+                    .forEach(k => localStorage.removeItem(k));
+
+
+
                 setBusy(false);
                 const idToken = session.getIdToken();
                 const p = idToken.payload;

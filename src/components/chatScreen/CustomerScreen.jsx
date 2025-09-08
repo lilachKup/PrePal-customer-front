@@ -168,65 +168,21 @@ export default function CustomerScreen() {
     const customer_address = user?.address;
 
     // Ask for delivery address on mount
-    /*useEffect(() => {
+    useEffect(() => {
         if (!customer_address) return;
         (async () => {
             if (newChat) {
                 setNewChat(false);
-                let initial = prompt("Use your saved signup address? (yes/no)");
-                let yn = toYesNo(initial);
-                if (!yn) yn = "yes";
+                setCustomerAddressOrder(customer_address);
 
-                if (yn === "yes") {
-                    setCustomerAddressOrder(customer_address);
-                    setCoords(null);
-                    return;
-                }
+
 
                 // Ask until valid address in Israel or user cancels to saved address
-                while (true) {
-                    const city = prompt("Enter city (required) or type 'cancel' to use saved address:");
-                    if (city === null || String(city).trim().toLowerCase() === "cancel") {
-                        setCustomerAddressOrder(customer_address);
-                        setCoords(null);
-                        break;
-                    }
 
-                    const street = prompt("Enter street name (e.g., Herzl). Type 'cancel' to use saved address:");
-                    if (street === null || String(street).trim().toLowerCase() === "cancel") {
-                        setCustomerAddressOrder(customer_address);
-                        setCoords(null);
-                        break;
-                    }
-
-                    const number = prompt("Enter house number. Type 'cancel' to use saved address:");
-                    if (number === null || String(number).trim().toLowerCase() === "cancel") {
-                        setCustomerAddressOrder(customer_address);
-                        setCoords(null);
-                        break;
-                    }
-
-                    const addressStr = formatAddress({ city, street: `${street} ${number}`, apt: "" });
-
-                    try {
-                        const { coords: c } = await validateILAddress({
-                            city,
-                            street: `${street} ${number}`,
-                            apt: "",
-                        });
-                        setCustomerAddressOrder(addressStr);
-                        setCoords(c);
-                        break;
-                    } catch (err) {
-                        alert(geoErrorToMessage(err));
-                    }
-                }
             }
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [customer_address]);
-
-     */
 
     // Load previous + active orders
     useEffect(() => {
