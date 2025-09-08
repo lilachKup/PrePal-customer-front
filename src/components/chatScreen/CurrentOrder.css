@@ -44,4 +44,30 @@
     color: #e53935;
   }
   
+
+  .order-item {
+  display: flex;
+  justify-content: space-between; 
+  align-items: center;           
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: #fff;
+}
+
+.order-item-details {
+  display: flex;
+  flex-direction: column; 
+  gap: 4px;
+}
+
+.order-item-img {
+  width: 50px;  
+  height: 50px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-left: 10px;
+}
+
   
