@@ -1,4 +1,3 @@
-// src/components/chatScreen/CustomerScreen.jsx
 import React, { useState, useEffect, useRef } from "react";
 import OrderChat from "./OrderChat";
 import CurrentOrder from "./CurrentOrder";
@@ -44,11 +43,11 @@ export default function CustomerScreen() {
     const [startingChatId, setStartingChatId] = useState("");
     const [newChat, setNewChat] = useState(true);
     const handleProfileSaved = (u) => {
-        setCustomerAddressOrder(u?.address || null); // הכתובת החדשה
-        setCoords(null);                              // נכריח ולידציה מחדש אם צריך
+        setCustomerAddressOrder(u?.address || null); 
+        setCoords(null);                       
     };
 
-    useEffect(() => { //LILACHNEW
+    useEffect(() => { 
         try {
             const saved = localStorage.getItem("pp_order_items");
             if (saved) {
@@ -56,13 +55,13 @@ export default function CustomerScreen() {
                 if (Array.isArray(items)) setOrderItems(items);
             }
         } catch { }
-    }, []); //LILACHNEW
+    }, []);
 
-    useEffect(() => { //LILACHNEW
+    useEffect(() => { 
         try {
             localStorage.setItem("pp_order_items", JSON.stringify(orderItems));
         } catch { }
-    }, [orderItems]); //LILACHNEW
+    }, [orderItems]); 
 
     const startNewChat = async (addrOverride) => {
         try {
@@ -76,8 +75,7 @@ export default function CustomerScreen() {
             localStorage.removeItem("pp_chat_id");
             setChatPrefill("");
 
-            // ⬅️ משתמשים קודם כל בכתובת שהועברה מבחוץ (addrOverride),
-            // ואם אין – בכתובת המעודכנת ב-state, ואם גם אין – בכתובת מה־localStorage.
+            
             const addressToUse = addrOverride ?? customerAddressOrder ?? customer_address ?? "";
 
             const res = await fetch(
@@ -109,8 +107,6 @@ export default function CustomerScreen() {
 
         const order = Array.isArray(arg?.items) ? arg : arg?.order;
         const explicitText = arg?.chatText;
-
-
 
         let line = explicitText;
         if (!line && order) {
@@ -174,11 +170,7 @@ export default function CustomerScreen() {
             if (newChat) {
                 setNewChat(false);
                 setCustomerAddressOrder(customer_address);
-
-
-
                 // Ask until valid address in Israel or user cancels to saved address
-
             }
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps

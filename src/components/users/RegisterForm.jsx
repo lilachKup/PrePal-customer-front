@@ -7,7 +7,7 @@ import {
 import './RegisterForm.css';
 import { useAuth } from 'react-oidc-context';
 
-// ✅ utils for address validation in Israel
+// utils for address validation in Israel
 import {
     validateILAddress,
     formatAddress,
@@ -160,7 +160,6 @@ export default function RegisterForm() {
                 />
             </div>
 
-            {/* Address */}
             {/* Address */}
             <div className="address-row">
                 <div className="address-field">

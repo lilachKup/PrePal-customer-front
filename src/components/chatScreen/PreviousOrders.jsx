@@ -1,4 +1,3 @@
-// src/components/chatScreen/PreviousOrders.jsx
 import React from "react";
 import "./PreviousOrders.css";
 
@@ -54,7 +53,6 @@ export default function PreviousOrders({ orders = [], onSelectOrder }) {
                                 <div className="order-title">Order {index + 1}</div>
                                 <div className="order-sub">{count} items</div>
 
-                                {/* Always-visible preview like your 'Order 5' */}
                                 <div className="order-preview">
                                     <ul className="order-preview-list">
                                         {(order.items || []).map((it, i) => {

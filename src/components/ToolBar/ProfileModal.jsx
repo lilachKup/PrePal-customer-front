@@ -1,4 +1,3 @@
-// src/components/ToolBar/ProfileModal.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import "./ProfileModal.css";
@@ -7,7 +6,7 @@ import {
   CognitoUser,
 } from "amazon-cognito-identity-js";
 
-// ✅ Israel address validator utils
+// Israel address validator utils
 import {
   validateILAddress,
   formatAddress,
@@ -157,7 +156,6 @@ export default function ProfileModal({ open, onClose, onSaved,onNewChat }) {
   const onSave = async (e) => {
     e.preventDefault();
 
-    // נרמל מחרוזות להשוואה הוגנת (רווחים מיותרים וכו')
     const normalize = (s) => (s || "").replace(/\s+/g, " ").trim();
 
     const addressStr = formatAddress({
@@ -179,10 +177,8 @@ export default function ProfileModal({ open, onClose, onSaved,onNewChat }) {
       return;
     }
 
-    // האם הכתובת באמת השתנתה לעומת מה שהיה כשנפתח המודל
     const addressChanged = normalize(initial?.address) !== normalize(addressStr);
 
-    // שמירה ל-localStorage
     const localOk = saveUserToStorage({
       phone_number: form.phone_number,
       name: form.name,
@@ -195,15 +191,12 @@ export default function ProfileModal({ open, onClose, onSaved,onNewChat }) {
     const ok = localOk && cognitoOk;
 
     if (ok) {
-      // עדכון ההורה פעם אחת בלבד
       onSaved?.({ ...form, address: addressStr });
 
-      // אם באמת השתנתה הכתובת — לפתוח צ'אט חדש עם הכתובת החדשה
       if (addressChanged) {
         onNewChat?.(addressStr);
       }
 
-      // רענון המודל עצמו
       setForm((f) => ({ ...f, address: addressStr }));
     } else {
       console.log(addressChanged ? "Save failed, skip reset" : "Address did not change");

@@ -1,4 +1,3 @@
-// src/utils/checkValidAddress.js
 
 // ---------- format ----------
 export function formatAddress({ city, street, apt }) {
@@ -45,7 +44,6 @@ async function geocodeViaLambda(address) {
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
             const e = new Error("bad_payload"); e.code = "bad_payload"; throw e;
         }
-        // אם ה-Lambda מחזיר country_code נשתמש בו; אחרת נאמת ברוורס
         const cc = String(data.country_code || "").toLowerCase() || null;
         return { lat, lng, cc };
     }

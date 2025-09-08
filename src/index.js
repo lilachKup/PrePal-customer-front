@@ -22,7 +22,7 @@ const cognitoAuthConfig = {
     jwks_uri: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_tpea6bazd/.well-known/jwks.json"
   }
 };
-//</React.StrictMode> i deleted it
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   

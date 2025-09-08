@@ -1,43 +1,39 @@
 /* ===== Vars ===== */
 :root{
-  --topbar: 72px;                          /* גובה הטופ־בר בפועל */
-  --gap: 20px;                             /* רווח גלובלי */
-  --pp-purple-border: rgba(70,8,114,.25);  /* מסגרת סגולה לצ'אט */
-  --pp-green-border:  #c2e2d3;             /* מסגרת ירוקה לימין */
-  --pp-orange-panel:  #FFE3C2;             /* לשימוש ב-Previous/Active אם צריך */
+  --topbar: 72px;                         
+  --gap: 20px;                             
+  --pp-purple-border: rgba(70,8,114,.25);  
+  --pp-green-border:  #c2e2d3;  
+  --pp-orange-panel:  #FFE3C2;   
 }
 
 /* ===== Layout – Desktop/Tablet ===== */
 .customer-layout{
   display:flex;
   flex-direction:row;
-  height:calc(100vh - var(--topbar));      /* מסך מלא פחות הטופ־בר */
+  height:calc(100vh - var(--topbar));    
   padding:var(--gap);
   gap:var(--gap);
   box-sizing:border-box;
-  align-items:stretch;                      /* שלושת העמודות באותו גובה */
+  align-items:stretch;                
 }
 
-/* כרטיסים: צ'אט וימין (השמאלי הוא קונטיינר שקוף) */
 .chat-panel,
 .order-panel{
   background:#f9f9f9;
   border-radius:10px;
   padding:10px;
   box-shadow:0 2px 6px rgba(0,0,0,.1);
-  overflow:auto;                            /* גלילה פנימית */
-  min-height:0;                             /* חשוב ב-flex */
+  overflow:auto;                           
+  min-height:0;                    
 }
 
-/* עמודות ורוחבים */
 .chat-panel { flex:1.5; display:flex; flex-direction:column; border:2px solid var(--pp-purple-border); }
 .old-orders { flex:1;   display:flex; flex-direction:column; gap:var(--gap); background:transparent; border:none; box-shadow:none; padding:0; min-height:0; }
 .order-panel{ flex:1;   display:flex; flex-direction:column; border:2px solid var(--pp-green-border); }
 
-/* הצ'אט ימלא את הגובה שמתחת לכותרת */
 .chat-panel > div:last-child{ display:flex; flex-direction:column; flex:1; min-height:0; }
 
-/* הטור השמאלי: שתי קופסאות – חלוקת גובה 2:1 וריווח ע"י gap בלבד */
 .old-orders > .previous-orders,
 .old-orders > .active-order{
   margin:0; display:flex; flex-direction:column; min-height:0; width:100%; box-sizing:border-box;
@@ -47,10 +43,8 @@
 .previous-orders .section-title,
 .active-order .section-title{ margin-top:0; }
 
-/* הימני: ה-CurrentOrder (הילד השני) יימתח ויגלול בפנים */
 .order-panel > *:nth-child(2){ flex:1; min-height:0; overflow:auto; }
 
-/* כותרות כלליות */
 .section-title{
   font:700 20px 'Segoe UI', sans-serif;
   color:#460872;
@@ -76,7 +70,7 @@
 .chat-send-btn:active:enabled{ transform:translateY(1px); }
 .chat-send-btn:disabled{ opacity:.5; cursor:not-allowed; }
 
-/* ===== Send Order buttons (ימין/Active) ===== */
+/* ===== Send Order buttons ===== */
 .active-order .send-order-btn,
 .order-panel .send-order-btn{
   padding:12px; background-color:#4A90E2; color:#fff;
@@ -96,17 +90,13 @@
   .active-order   { flex:1; }
 }
 
-/* Scrollbar עדין (אופציונלי) לימין */
 .order-panel > *:nth-child(2)::-webkit-scrollbar{ width:8px; }
 .order-panel > *:nth-child(2)::-webkit-scrollbar-thumb{ background:#e1def0; border-radius:8px; }
 
-/* מצב ריק עדין (אופציונלי) */
 .empty-hint{ color:#777; font-style:italic; margin:8px 0 0; }
 
-/* צבע גלילה גלובלי */
 :root { --scroll-thumb: #e1def0; }
 
-/* ימין: תוכן ה-Current Order (הילד השני) */
 .order-panel > *:nth-child(2) {
   scrollbar-width: thin;                       /* Firefox */
   scrollbar-color: var(--scroll-thumb) transparent;
@@ -117,10 +107,9 @@
   border-radius: 8px;
 }
 
-/* שמאל: שתי הקופסאות (אם יש גלילה פנימית) */
 .previous-orders,
 .active-order {
-  overflow: auto;                               /* ליתר בטחון */
+  overflow: auto;                            
   scrollbar-width: thin;                        /* Firefox */
   scrollbar-color: var(--scroll-thumb) transparent;
 }

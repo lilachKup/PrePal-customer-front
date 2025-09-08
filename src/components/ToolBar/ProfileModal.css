@@ -58,7 +58,7 @@
   outline: none;
 }
 .pp-field input:focus {
-  border-color: #8a2be2; /* סגול עדין תואם PrepPal */
+  border-color: #8a2be2;
   box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.12);
 }
 
@@ -91,12 +91,12 @@
 
 .pp-address-row {
   display: flex;
-  gap: 12px; /* רווח בין השדות */
+  gap: 12px; 
   justify-content: space-between;
 }
 
 .pp-address-row .pp-field {
-  flex: 1; /* שדות ברוחב שווה */
+  flex: 1; 
 }
 
 .pp-address-row .pp-field:last-child {

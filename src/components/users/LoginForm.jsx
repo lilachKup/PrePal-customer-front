@@ -25,13 +25,11 @@ export default function LoginForm() {
 
         user.authenticateUser(auth, {
             onSuccess: (session) => {
-                // נקה את כל ה-localStorage של PrepPal לפני שמכניסים משתמש חדש
                 Object.keys(localStorage)
                     .filter(k => k.startsWith("pp_"))
                     .forEach(k => localStorage.removeItem(k));
 
-
-
+                    
                 setBusy(false);
                 const idToken = session.getIdToken();
                 const p = idToken.payload;

@@ -1,4 +1,3 @@
-// src/components/TopBar.jsx
 import React from "react";
 import { useState } from "react";
 import { CognitoUserPool } from "amazon-cognito-identity-js";
@@ -19,7 +18,6 @@ const TopBar = ({ onNewChat, onProfileSaved }) => {
   const [showProfile, setShowProfile] = useState(false);
 
   const handleLogout = () => {
-    // 1. מחיקת מידע מה־localStorage
     localStorage.removeItem("pp_user");
     localStorage.removeItem("pp_chat_id");
     localStorage.removeItem("pp_order_items");

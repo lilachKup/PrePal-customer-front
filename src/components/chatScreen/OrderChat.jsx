@@ -6,7 +6,7 @@ export default function OrderChat({
   customer_id,
   customer_address,
   prefillText,
-  startingChatId,              // NEW: מאפשר להתחיל עם chat_id שמגיע מהורה
+  startingChatId,  
 }) {
   const [message, setMessage] = useState("");
   const [chatLog, setChatLog] = useState([]);
@@ -18,7 +18,6 @@ export default function OrderChat({
   const inputRef = useRef(null);
   const lastPrefillRef = useRef("");
 
-  // NEW: אתחול chatId בתחילת חיי הקומפוננטה – קודם מ־startingChatId, אחרת מה-localStorage
   useEffect(() => {
     if (startingChatId) {
       setChatId(startingChatId);
@@ -33,13 +32,13 @@ export default function OrderChat({
     } else {
       setChatId("");
       setIsNewChat(true);
-      setChatLog([]); // התחלה נקייה
+      setChatLog([]); 
     }
   }, [startingChatId]);
 
-  const chatLogKey = (id) => (id ? `pp_chat_log_${id}` : null); //LILACHNEW
+  const chatLogKey = (id) => (id ? `pp_chat_log_${id}` : null);
 
-  useEffect(() => { //LILACHNEW
+  useEffect(() => { 
     if (!chatId) return;
     try {
       const key = chatLogKey(chatId);
@@ -49,15 +48,15 @@ export default function OrderChat({
         if (Array.isArray(parsed)) setChatLog(parsed);
       }
     } catch { }
-  }, [chatId]); //LILACHNEW
+  }, [chatId]); 
 
-  useEffect(() => { //LILACHNEW
+  useEffect(() => { 
     if (!chatId) return;
     try {
       const key = chatLogKey(chatId);
       if (key) localStorage.setItem(key, JSON.stringify(chatLog));
     } catch { }
-  }, [chatId, chatLog]); //LILACHNEW
+  }, [chatId, chatLog]);
 
   // Prefill input (do not auto send)
   useEffect(() => {
@@ -115,7 +114,7 @@ export default function OrderChat({
         setChatId(currentChatId);
         setIsNewChat(false);
 
-        localStorage.setItem("pp_chat_id", currentChatId);  // NEW: לשמור לזהות שיחה
+        localStorage.setItem("pp_chat_id", currentChatId); 
       }
 
       const res = await fetch(
