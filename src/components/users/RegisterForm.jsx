@@ -141,8 +141,8 @@ export default function RegisterForm() {
                     required
                 />
                 <span className="toggle-password" onClick={() => setShowPassword(!showPassword)}>
-          {showPassword ? "🙈" : "👁"}
-        </span>
+                    {showPassword ? "🙈" : "👁"}
+                </span>
             </div>
 
             <label>
@@ -161,32 +161,42 @@ export default function RegisterForm() {
             </div>
 
             {/* Address */}
-            <label>
-                City: <span className="req" aria-hidden="true">*</span>
-            </label>
-            <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className={`form-input ${addressError ? 'input-error' : ''}`}
-                required
-            />
+            {/* Address */}
+            <div className="address-row">
+                <div className="address-field">
+                    <label>
+                        City: <span className="req" aria-hidden="true">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className={`form-input ${addressError ? 'input-error' : ''}`}
+                        required
+                    />
+                </div>
 
-            <label>Street:</label>
-            <input
-                type="text"
-                value={street}
-                onChange={(e) => setStreet(e.target.value)}
-                className={`form-input ${addressError ? 'input-error' : ''}`}
-            />
+                <div className="address-field">
+                    <label>Street:</label>
+                    <input
+                        type="text"
+                        value={street}
+                        onChange={(e) => setStreet(e.target.value)}
+                        className={`form-input ${addressError ? 'input-error' : ''}`}
+                    />
+                </div>
 
-            <label>House Number:</label>
-            <input
-                type="text"
-                value={houseNumber}
-                onChange={(e) => setHouseNumber(e.target.value)}
-                className={`form-input ${addressError ? 'input-error' : ''}`}
-            />
+                <div className="address-field">
+                    <label>House Number:</label>
+                    <input
+                        type="text"
+                        value={houseNumber}
+                        onChange={(e) => setHouseNumber(e.target.value)}
+                        className={`form-input ${addressError ? 'input-error' : ''}`}
+                    />
+                </div>
+            </div>
+
 
             {/* Inline address error (keeps user input) */}
             {addressError && <p className="form-message error">{addressError}</p>}

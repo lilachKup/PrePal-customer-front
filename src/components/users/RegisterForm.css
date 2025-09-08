@@ -213,6 +213,18 @@ forgot-password-link,
   color: white;
 }
 
+.address-row {
+  display: flex;
+  gap: 10px; /* רווח קטן ביניהם */
+}
+
+.address-field {
+  flex: 1; /* כל שדה יתפוס מקום שווה */
+  display: flex;
+  flex-direction: column;
+}
+
+
 
 
 
